@@ -1,0 +1,45 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "stripe",
+            "message": "Direct stripe imports are forbidden. Use the BillingAdapter interface instead."
+          },
+          {
+            "name": "jose",
+            "message": "Direct JWT imports are forbidden. Use modules/auth/session.ts instead."
+          },
+          {
+            "name": "jsonwebtoken",
+            "message": "Direct JWT imports are forbidden. Use modules/auth/session.ts instead."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.object.name='db'][callee.property.name=/^(select|insert|update|delete)$/]",
+        "message": "Direct database queries are heavily restricted to prevent cross-tenant data leakage. You MUST wrap queries in the withTenantContext() helper, or explicitly disable this rule for system jobs."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["modules/billing/adapters/stripe.ts"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["lib/db/tenant.ts", "lib/db/seed.ts", "tests/**/*.ts", "modules/auth/session.ts", "modules/auth/passkey.ts", "modules/auth/actions.ts", "modules/rbac/can.ts"],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
+}

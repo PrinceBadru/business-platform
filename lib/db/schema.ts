@@ -22,6 +22,8 @@ export const itemTypeEnum = pgEnum('item_type', ['good', 'service']);
 export const transactionTypeEnum = pgEnum('transaction_type', ['sale', 'service_delivery', 'stock_adjustment']);
 export const debtStatusEnum = pgEnum('debt_status', ['outstanding', 'partially_paid', 'paid', 'cancelled']);
 export const jobStatusEnum = pgEnum('job_status', ['pending', 'processing', 'completed', 'failed']);
+export const billingProviderEnum = pgEnum('billing_provider', ['stripe', 'manual', 'none']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'past_due', 'cancelled', 'trialing']);
 
 // Helpers
 const timestamps = {
@@ -75,6 +77,7 @@ export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   businessType: businessTypeEnum('business_type').notNull(),
+  settings: jsonb('settings').default({}),
   ...timestamps
 });
 
@@ -82,6 +85,7 @@ export const locations = pgTable('locations', {
   id: uuid('id').primaryKey().defaultRandom(),
   accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 255 }).notNull(),
+  isArchived: boolean('is_archived').notNull().default(false),
   ...timestamps
 }, (table) => [
   index('locations_account_idx').on(table.accountId)
@@ -242,4 +246,18 @@ export const dailySummaries = pgTable('daily_summaries', {
   ...timestamps
 }, (table) => [
   index('summaries_account_loc_date_idx').on(table.accountId, table.locationId, table.date)
+]);
+
+// Billing
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  provider: billingProviderEnum('provider').notNull(),
+  providerSubscriptionId: text('provider_subscription_id'),
+  planName: text('plan_name'),
+  status: subscriptionStatusEnum('status').notNull(),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index('subscriptions_account_idx').on(table.accountId)
 ]);

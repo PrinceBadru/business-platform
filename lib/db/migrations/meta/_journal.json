@@ -22,6 +22,20 @@
       "when": 1790243488968,
       "tag": "0002_add_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790244268903,
+      "tag": "0003_add_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790245644152,
+      "tag": "0004_account_settings_location_archive",
+      "breakpoints": true
     }
   ]
 }
