@@ -1,13 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PROTECTED_ROUTES = ['/dashboard', '/settings', '/account'];
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/settings',
+  '/inventory',
+  '/suppliers',
+  '/transactions',
+  '/customers',
+  '/checkout',
+  '/debts',
+  '/team',
+  '/benchmarking',
+  '/account',
+];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // Edge-compatible optimistic check
   const sessionToken = req.cookies.get('auth_session')?.value;
-  
-  const isProtected = PROTECTED_ROUTES.some(route => 
+
+  const isProtected = PROTECTED_ROUTES.some(route =>
     req.nextUrl.pathname.startsWith(route)
   );
 
@@ -18,7 +30,7 @@ export async function middleware(req: NextRequest) {
   // Note: Deep cryptographic validation against the database happens inside
   // Server Components (layout.tsx) and Server Actions (guard.ts) because
   // direct database connections via postgres.js are not supported in Edge.
-  
+
   return NextResponse.next();
 }
 
