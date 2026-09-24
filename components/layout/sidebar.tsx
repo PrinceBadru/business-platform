@@ -26,6 +26,7 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
     { name: "Inventory", href: "/dashboard/inventory", icon: Package },
     { name: "Suppliers", href: "/dashboard/suppliers", icon: Truck },
     { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
+    { name: "Benchmarking", href: "/dashboard/benchmarking", icon: Users },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
