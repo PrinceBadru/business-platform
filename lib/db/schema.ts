@@ -19,7 +19,7 @@ import { sql } from 'drizzle-orm';
 export const businessTypeEnum = pgEnum('business_type', ['retail', 'services', 'hybrid']);
 export const roleEnum = pgEnum('role', ['owner', 'admin', 'manager', 'employee']);
 export const itemTypeEnum = pgEnum('item_type', ['good', 'service']);
-export const transactionTypeEnum = pgEnum('transaction_type', ['sale', 'service_delivery', 'stock_adjustment']);
+export const transactionTypeEnum = pgEnum('transaction_type', ['sale', 'service_delivery', 'stock_adjustment', 'refund']);
 export const debtStatusEnum = pgEnum('debt_status', ['outstanding', 'partially_paid', 'paid', 'cancelled']);
 export const jobStatusEnum = pgEnum('job_status', ['pending', 'processing', 'completed', 'failed']);
 export const billingProviderEnum = pgEnum('billing_provider', ['stripe', 'manual', 'none']);

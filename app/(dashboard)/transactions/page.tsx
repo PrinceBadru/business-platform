@@ -15,6 +15,7 @@ export default async function TransactionsPage() {
     return <div className="p-10 text-red-500">You do not have permission to view transactions.</div>;
   }
 
+  const canWrite = await can(session.userId, session.accountId, 'transactions:write');
   const txs = await getTransactions(session.accountId);
 
   return (
@@ -24,7 +25,7 @@ export default async function TransactionsPage() {
         <p className="text-gray-500">View past sales and revenue events.</p>
       </div>
       
-      <TransactionsClient transactions={txs} />
+      <TransactionsClient transactions={txs} canWrite={canWrite} />
     </div>
   );
 }

@@ -6,7 +6,7 @@ export async function getDashboardMetrics(accountId: string) {
   return withTenantContext(accountId, async (tx) => {
     // 1. Total Revenue and count
     const [txStats] = await tx.select({
-      revenue: sql<string>`COALESCE(SUM(${transactions.totalCents}), 0)::text`,
+      revenue: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.transactionType} = 'refund' THEN -${transactions.totalCents} ELSE ${transactions.totalCents} END), 0)::text`,
       count: sql<string>`COUNT(${transactions.id})::text`
     }).from(transactions)
     .where(eq(transactions.accountId, accountId));
@@ -14,9 +14,10 @@ export async function getDashboardMetrics(accountId: string) {
     // 2. Type stats
     const typeStatsRaw = await tx.select({
       type: offerings.itemType,
-      revenue: sql<string>`COALESCE(SUM(${transactionLines.lineTotalCents}), 0)::text`
+      revenue: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.transactionType} = 'refund' THEN -${transactionLines.lineTotalCents} ELSE ${transactionLines.lineTotalCents} END), 0)::text`
     })
     .from(transactionLines)
+    .innerJoin(transactions, eq(transactionLines.transactionId, transactions.id))
     .innerJoin(offerings, eq(transactionLines.offeringId, offerings.id))
     .where(eq(transactionLines.accountId, accountId))
     .groupBy(offerings.itemType);

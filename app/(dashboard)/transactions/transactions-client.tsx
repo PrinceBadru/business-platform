@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Receipt, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Receipt, Search, RotateCcw } from 'lucide-react';
+import { processRefund } from '@/modules/transactions/mutations';
 
-export function TransactionsClient({ transactions }: { transactions: any[] }) {
+export function TransactionsClient({ transactions, canWrite }: { transactions: any[], canWrite: boolean }) {
   const [search, setSearch] = useState('');
+  const [isPending, startTransition] = useTransition();
 
   const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
   
@@ -18,6 +21,18 @@ export function TransactionsClient({ transactions }: { transactions: any[] }) {
       (t.id.toLowerCase().includes(term))
     );
   });
+
+  const handleRefund = (txId: string) => {
+    if (confirm("Are you sure you want to refund this transaction? This will reverse the revenue and restore the stock.")) {
+      startTransition(async () => {
+        try {
+          await processRefund(txId);
+        } catch (e: any) {
+          alert("Failed to refund: " + e.message);
+        }
+      });
+    }
+  };
 
   return (
     <Card>
@@ -49,6 +64,7 @@ export function TransactionsClient({ transactions }: { transactions: any[] }) {
                 <th className="px-4 py-3">Cashier</th>
                 <th className="px-4 py-3">Location</th>
                 <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -59,14 +75,32 @@ export function TransactionsClient({ transactions }: { transactions: any[] }) {
                   </td>
                   <td className="px-4 py-3 text-gray-500 font-mono text-xs">
                     {tx.id.split('-')[0]}...
+                    {tx.transactionType === 'refund' && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        Refund
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {tx.customerName || <span className="text-gray-400 italic">Walk-in</span>}
                   </td>
                   <td className="px-4 py-3">{tx.cashierName || 'System'}</td>
                   <td className="px-4 py-3">{tx.locationName}</td>
-                  <td className="px-4 py-3 text-right font-bold">
-                    {formatMoney(tx.totalCents)}
+                  <td className="px-4 py-3 text-right font-bold text-gray-900 dark:text-gray-100">
+                    {tx.transactionType === 'refund' ? '-' : ''}{formatMoney(tx.totalCents)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canWrite && tx.transactionType !== 'refund' && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleRefund(tx.id)}
+                        disabled={isPending}
+                        className="h-8 text-gray-500 hover:text-red-600"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-1" /> Refund
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}
