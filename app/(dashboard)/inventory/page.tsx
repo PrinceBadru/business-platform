@@ -13,6 +13,10 @@ export default async function InventoryPage() {
   const canWrite = await can(session.userId, session.accountId, 'offerings:write');
   const allOfferings = await getOfferings(session.accountId);
 
+  const { getAccountSettings } = await import('@/modules/account/queries');
+  const account = await getAccountSettings(session.accountId);
+  const businessType = account?.businessType || 'hybrid';
+
   return (
     <div className="max-w-7xl space-y-6">
       <div>
@@ -20,7 +24,7 @@ export default async function InventoryPage() {
         <p className="text-gray-500">Manage your catalog of goods and services.</p>
       </div>
 
-      <InventoryClient offerings={allOfferings} canWrite={canWrite} />
+      <InventoryClient offerings={allOfferings} canWrite={canWrite} businessType={businessType} />
     </div>
   );
 }

@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { createOffering, archiveOffering } from '@/modules/inventory/mutations';
 import { Package, Plus, Archive, Box } from 'lucide-react';
 
-export function InventoryClient({ offerings, canWrite }: { offerings: any[], canWrite: boolean }) {
+export function InventoryClient({ offerings, canWrite, businessType }: { offerings: any[], canWrite: boolean, businessType: string }) {
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
   
   const [name, setName] = useState('');
-  const [itemType, setItemType] = useState<'good'|'service'>('good');
+  
+  const initialType = businessType === 'services' ? 'service' : 'good';
+  const [itemType, setItemType] = useState<'good'|'service'>(initialType);
   const [priceStr, setPriceStr] = useState('');
   const [costStr, setCostStr] = useState('');
 
@@ -72,18 +74,20 @@ export function InventoryClient({ offerings, canWrite }: { offerings: any[], can
                   disabled={isPending}
                 />
               </div>
-              <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium">Type</label>
-                <select
-                  value={itemType}
-                  onChange={e => setItemType(e.target.value as 'good'|'service')}
-                  disabled={isPending}
-                  className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 dark:border-gray-800 dark:bg-gray-950"
-                >
-                  <option value="good">Physical Good</option>
-                  <option value="service">Service</option>
-                </select>
-              </div>
+              {businessType === 'hybrid' && (
+                <div className="flex-1 space-y-2">
+                  <label className="text-sm font-medium">Type</label>
+                  <select
+                    value={itemType}
+                    onChange={e => setItemType(e.target.value as 'good'|'service')}
+                    disabled={isPending}
+                    className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 dark:border-gray-800 dark:bg-gray-950"
+                  >
+                    <option value="good">Physical Good</option>
+                    <option value="service">Service</option>
+                  </select>
+                </div>
+              )}
               <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium">Price ($)</label>
                 <Input 

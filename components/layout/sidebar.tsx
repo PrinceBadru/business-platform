@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useTransition } from 'react';
 import { switchAccount } from '@/modules/account/actions';
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; businessType: 'retail' | 'services' | 'hybrid' };
 
 export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], activeAccountId: string | null }) {
   const pathname = usePathname();
@@ -28,6 +28,11 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
     { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
+
+  let filteredNav = navItems;
+  if (activeAccount?.businessType === 'services') {
+    filteredNav = navItems.filter(item => !['Suppliers'].includes(item.name));
+  }
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 h-screen overflow-y-auto">
@@ -54,7 +59,7 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {filteredNav.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
