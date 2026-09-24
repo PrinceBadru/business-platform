@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Settings, MapPin, Users, Package, CreditCard, Contact, ShoppingCart } from 'lucide-react';
+import { Home, Settings, MapPin, Users, Package, CreditCard, Contact, ShoppingCart, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Point of Sale", href: "/dashboard/checkout", icon: ShoppingCart },
+    { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
     { name: "Customers", href: "/dashboard/customers", icon: Contact },
     { name: "Locations", href: "/dashboard/locations", icon: MapPin },
     { name: "Team", href: "/dashboard/team", icon: Users },
