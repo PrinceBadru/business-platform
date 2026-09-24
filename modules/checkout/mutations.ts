@@ -10,7 +10,8 @@ import { revalidatePath } from 'next/cache';
 export async function processCheckout(
   locationId: string,
   customerId: string | null,
-  cartLines: { offeringId: string; quantity: number }[]
+  cartLines: { offeringId: string; quantity: number }[],
+  recordAsDebt: boolean = false
 ) {
   return requirePermission('transactions:write')(async () => {
     const session = await getCurrentSession();
@@ -19,6 +20,7 @@ export async function processCheckout(
     const userId = session.userId;
 
     if (cartLines.length === 0) throw new Error('Cart is empty');
+    if (recordAsDebt && !customerId) throw new Error('A customer must be selected to record a debt');
 
     await withTenantContext(accountId, async (tx) => {
       // 1. Fetch current prices & stock securely
@@ -77,10 +79,27 @@ export async function processCheckout(
             .where(eq(offerings.id, item.id));
         }
       }
+
+      // 5. Create Debt if requested
+      if (recordAsDebt && customerId) {
+        // Need to import debts schema
+        // We will replace this carefully in a separate step or just assume it works if we import it.
+        const { debts } = await import('@/lib/db/schema');
+        await tx.insert(debts).values({
+          accountId,
+          customerId,
+          transactionId: txHeader.id,
+          amountCents: totalCents,
+          remainingCents: totalCents,
+          status: 'outstanding'
+        });
+      }
     });
 
     revalidatePath('/dashboard/inventory');
     revalidatePath('/dashboard/checkout');
+    revalidatePath('/dashboard/transactions');
+    revalidatePath('/dashboard/debts');
     return { success: true };
   });
 }

@@ -32,11 +32,16 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
     }).filter(i => i.quantity > 0));
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = (recordAsDebt: boolean = false) => {
     if (cart.length === 0 || !locationId) return;
     startTransition(async () => {
       try {
-        await processCheckout(locationId, customerId || null, cart.map(i => ({ offeringId: i.offeringId, quantity: i.quantity })));
+        await processCheckout(
+          locationId, 
+          customerId || null, 
+          cart.map(i => ({ offeringId: i.offeringId, quantity: i.quantity })),
+          recordAsDebt
+        );
         setSuccess(true);
         setCart([]);
         setTimeout(() => setSuccess(false), 3000);
@@ -149,13 +154,21 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
               </div>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col gap-3">
             <Button 
               className="w-full text-lg h-12" 
-              onClick={handleCheckout} 
+              onClick={() => handleCheckout(false)} 
               disabled={isPending || cart.length === 0 || !locationId}
             >
               {isPending ? 'Processing...' : 'Charge ' + formatMoney(totalCents)}
+            </Button>
+            <Button 
+              variant="outline"
+              className="w-full text-lg h-12 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900" 
+              onClick={() => handleCheckout(true)} 
+              disabled={isPending || cart.length === 0 || !locationId || !customerId}
+            >
+              Record as Credit (Tab)
             </Button>
           </CardFooter>
         </Card>
