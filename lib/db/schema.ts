@@ -59,6 +59,17 @@ export const webauthnCredentials = pgTable('webauthn_credentials', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const sessions = pgTable('sessions', {
+  id: varchar('id', { length: 255 }).primaryKey(), // Opaque random hex token
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Tenancy & Organization
 export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),

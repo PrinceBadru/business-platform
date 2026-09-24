@@ -5,15 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726443359662,
-      "tag": "0000_soft_the_anarchist",
+      "when": 1790242148366,
+      "tag": "0000_init",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1790241497213,
-      "tag": "0001_nice_lethal_legion",
+      "when": 1790242153300,
+      "tag": "0001_rls_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790243488968,
+      "tag": "0002_add_sessions",
       "breakpoints": true
     }
   ]
