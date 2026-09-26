@@ -28,7 +28,7 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- PostgreSQL (v14 or higher) running locally or remotely.
+- Docker & Docker Compose (recommended) **or** a local PostgreSQL v14+ instance
 
 ### Installation & Setup
 
@@ -43,26 +43,59 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
    npm install
    ```
 
-3. **Environment Setup**
-   Copy `.env.example` to `.env.local` (and `.env` for production):
+3. **Start the Database (Docker)**
+   The easiest way to get Postgres running locally is via Docker Compose:
+   ```bash
+   docker compose up -d
+   ```
+   This starts a Postgres 15 container on **port 5433** with the following defaults:
+   | Setting | Value |
+   |---|---|
+   | Host | `localhost` |
+   | Port | `5433` |
+   | Database | `business_platform` |
+   | User | `postgres` |
+   | Password | `postgres` |
+
+   > If you prefer a local Postgres install, skip this step and update `DATABASE_URL` in `.env.local` accordingly.
+
+4. **Environment Setup**
+   Copy `.env.example` to `.env.local`:
    ```bash
    cp .env.example .env.local
    ```
-   *Ensure you update the `DATABASE_URL` in your `.env.local` to point to your Postgres instance.*
+   The default `DATABASE_URL` in `.env.example` already points to the Docker container — no changes needed if you used `docker compose up`.
 
-4. **Database Setup**
-   Push the schema to the database and run the seed script to populate initial data and the default tenant:
+5. **Database Setup**
+   Push the schema to the database and seed demo data:
    ```bash
    npm run db:push
    npm run db:seed
    ```
 
-5. **Run the Application**
+6. **Run the Application**
    Start the Next.js development server:
    ```bash
    npm run dev
    ```
-   Access the app at `http://localhost:3000`. By default, unauthenticated users will be securely redirected to the `/sign-in` page. *(Note: Check the seed script or local DB for test user credentials).*
+   Access the app at `http://localhost:3000`. Unauthenticated users are redirected to `/sign-in`.
+
+## Demo Accounts
+
+Running `npm run db:seed` creates two isolated demo tenants. Authentication uses **passkeys (WebAuthn)** — register a passkey on first sign-in tied to the email below.
+
+| Tenant | Business Type | Email | Role |
+|---|---|---|---|
+| Acme Retail | Retail | `admin@acmeretail.com` | Owner |
+| Globex Services | Services | `admin@globex.com` | Owner |
+
+**To sign in:**
+1. Navigate to `http://localhost:3000/sign-in`
+2. Enter one of the emails above
+3. Follow the passkey / WebAuthn browser prompt to register or authenticate
+
+> [!NOTE]
+> Each tenant is fully isolated — signing in as `admin@acmeretail.com` will only show Acme Retail data, and vice versa.
 
 ## Running Tests
 
