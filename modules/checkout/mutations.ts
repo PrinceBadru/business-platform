@@ -1,6 +1,6 @@
 'use server';
 
-import { offerings, transactions, transactionLines } from '@/lib/db/schema';
+import { offerings, transactions, transactionLines, stockMovements } from '@/lib/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 import { requirePermission } from '@/modules/rbac/guard';
@@ -77,6 +77,16 @@ export async function processCheckout(
           await tx.update(offerings)
             .set({ currentStock: sql`${offerings.currentStock} - ${line.quantity}` })
             .where(eq(offerings.id, item.id));
+
+          await tx.insert(stockMovements).values({
+            accountId,
+            locationId,
+            offeringId: item.id,
+            quantityChange: -line.quantity,
+            reason: 'checkout',
+            transactionId: txHeader.id,
+            createdBy: userId
+          });
         }
       }
 

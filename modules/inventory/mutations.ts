@@ -1,6 +1,6 @@
 'use server';
 
-import { offerings } from '@/lib/db/schema';
+import { offerings, stockMovements } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 import { requirePermission } from '@/modules/rbac/guard';
@@ -27,11 +27,24 @@ export async function createOffering(data: {
       throw new Error('Money values cannot be negative');
     }
 
+    if (data.tracksStock && !session?.locationId) throw new Error('A location must be selected to track stock');
+
     await withTenantContext(accountId, async (tx) => {
-      await tx.insert(offerings).values({
+      const [newOffering] = await tx.insert(offerings).values({
         accountId,
         ...data
-      });
+      }).returning();
+
+      if (data.tracksStock && data.currentStock && data.currentStock > 0) {
+        await tx.insert(stockMovements).values({
+          accountId,
+          locationId: session.locationId!,
+          offeringId: newOffering.id,
+          quantityChange: data.currentStock,
+          reason: 'initial_stock',
+          createdBy: session.userId,
+        });
+      }
     });
 
     revalidatePath('/dashboard/inventory');

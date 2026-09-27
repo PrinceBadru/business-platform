@@ -1,6 +1,6 @@
 'use server';
 
-import { transactions, transactionLines, offerings } from '@/lib/db/schema';
+import { transactions, transactionLines, offerings, stockMovements } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 import { requirePermission } from '@/modules/rbac/guard';
@@ -58,6 +58,16 @@ export async function processRefund(originalTransactionId: string) {
             await tx.update(offerings)
               .set({ currentStock: sql`${offerings.currentStock} + ${line.quantity}` })
               .where(eq(offerings.id, item.id));
+
+            await tx.insert(stockMovements).values({
+              accountId,
+              locationId: originalTx.locationId,
+              offeringId: item.id,
+              quantityChange: line.quantity,
+              reason: 'refund',
+              transactionId: refundTx.id,
+              createdBy: userId
+            });
           }
         }
       }

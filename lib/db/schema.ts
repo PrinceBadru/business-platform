@@ -66,6 +66,7 @@ export const sessions = pgTable('sessions', {
   id: varchar('id', { length: 255 }).primaryKey(), // Opaque random hex token
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   ipAddress: varchar('ip_address', { length: 45 }),
@@ -158,6 +159,21 @@ export const offerings = pgTable('offerings', {
   index('offerings_account_idx').on(table.accountId),
   check('cost_cents_positive', sql`${table.costCents} >= 0`),
   check('price_cents_positive', sql`${table.priceCents} >= 0`)
+]);
+
+export const stockMovements = pgTable('stock_movements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').notNull().references(() => locations.id, { onDelete: 'restrict' }),
+  offeringId: uuid('offering_id').notNull().references(() => offerings.id, { onDelete: 'restrict' }),
+  quantityChange: integer('quantity_change').notNull(),
+  reason: varchar('reason', { length: 255 }).notNull(),
+  transactionId: uuid('transaction_id'), // can't reference immediately if transactions table is below, so we leave it without FK or add it later. It will just be a UUID column.
+  createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('stock_movements_account_loc_idx').on(table.accountId, table.locationId),
+  index('stock_movements_offering_idx').on(table.offeringId),
 ]);
 
 // Transactions
@@ -261,4 +277,17 @@ export const subscriptions = pgTable('subscriptions', {
   ...timestamps
 }, (table) => [
   index('subscriptions_account_idx').on(table.accountId)
+]);
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  action: varchar('action', { length: 255 }).notNull(),
+  entityType: varchar('entity_type', { length: 255 }).notNull(),
+  entityId: varchar('entity_id', { length: 255 }),
+  details: jsonb('details').default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('audit_logs_account_idx').on(table.accountId),
 ]);
