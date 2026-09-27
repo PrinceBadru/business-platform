@@ -1,21 +1,39 @@
 import { getCurrentSession } from '@/modules/auth/session';
+import { db } from '@/lib/db/drizzle';
+import { locations, userAccountRoles } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import LocationsClient from './locations-client';
 
 export default async function LocationsPage() {
   const session = await getCurrentSession();
-  if (!session || !session.accountId) {
-    redirect('/sign-in');
-  }
+  if (!session?.accountId) redirect('/sign-in');
+
+  // Check role — only owners/admins can create/archive locations
+  const [role] = await db
+    .select()
+    .from(userAccountRoles)
+    .where(
+      and(
+        eq(userAccountRoles.userId, session.userId),
+        eq(userAccountRoles.accountId, session.accountId)
+      )
+    )
+    .limit(1);
+
+  const canManage = role?.role === 'owner' || role?.role === 'admin';
+
+  // Load all locations for this account
+  const accountLocations = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.accountId, session.accountId));
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Locations</h1>
-        <p className="text-gray-500">Manage your physical business locations and warehouses.</p>
-      </div>
-      <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg text-center text-gray-500">
-        Locations module is under construction.
-      </div>
-    </div>
+    <LocationsClient
+      locations={accountLocations}
+      canManage={canManage}
+      activeLocationId={session.locationId ?? null}
+    />
   );
 }

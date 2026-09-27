@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Settings, MapPin, Users, Package, CreditCard, Contact, ShoppingCart, Receipt, Banknote, Truck } from 'lucide-react';
+import { Home, Settings, MapPin, Users, Package, CreditCard, Contact, ShoppingCart, Receipt, Banknote, Truck, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
     { name: "Suppliers", href: "/suppliers", icon: Truck },
     { name: "Billing", href: "/billing", icon: CreditCard },
     { name: "Benchmarking", href: "/benchmarking", icon: Users },
+    { name: "Activity Log", href: "/activity", icon: Activity },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 

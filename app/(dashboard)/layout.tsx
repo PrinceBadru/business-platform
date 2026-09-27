@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { getCurrentSession } from '@/modules/auth/session';
 import { db } from '@/lib/db/drizzle';
-import { accounts, userAccountRoles } from '@/lib/db/schema';
+import { accounts, userAccountRoles, users } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
@@ -23,7 +23,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     userAccounts = await db.select().from(accounts).where(inArray(accounts.id, accountIds));
   }
 
-  // 3. Resolve Active Tenant
+  const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, session.userId)).limit(1);
+
+  // 3. Resolve Active Tenant — redirect new users to onboarding
+  if (accountIds.length === 0) {
+    redirect('/onboarding');
+  }
+
   const activeAccountId = session.accountId || accountIds[0] || null;
 
   return (
@@ -33,7 +39,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         activeAccountId={activeAccountId} 
       />
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Topbar />
+        <Topbar userName={user?.name ?? undefined} />
         <div className="flex-1 overflow-auto p-6">
           {children}
         </div>
