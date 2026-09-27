@@ -4,7 +4,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <header className="flex items-center justify-between px-6 py-4 border-b">
-        <h1 className="text-xl font-bold">Business Management Platform</h1>
+        <h1 className="text-xl font-bold">Nexus Finance</h1>
         <nav>
           <Link 
             href="/sign-in" 
@@ -37,7 +37,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="p-6 text-center text-sm text-gray-500 border-t">
-        &copy; {new Date().getFullYear()} Business Platform. All rights reserved.
+        &copy; {new Date().getFullYear()} Nexus Finance. All rights reserved.
       </footer>
     </div>
   );

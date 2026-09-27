@@ -9,7 +9,7 @@ import { webauthnCredentials } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
-const rpName = process.env.WEBAUTHN_RP_NAME || 'Business Platform';
+const rpName = process.env.WEBAUTHN_RP_NAME || 'Nexus Finance';
 const rpID = process.env.WEBAUTHN_RP_ID || 'localhost';
 const origin = `http://${rpID}:3000`;
 

@@ -1,4 +1,4 @@
-# Business Management Platform
+# Nexus Finance
 
 A robust, multi-tenant Business Management Platform built to handle Point of Sale (POS), Inventory, CRM, Supplier Management, Debts, and Analytics for both Retail and Service-based businesses.
 

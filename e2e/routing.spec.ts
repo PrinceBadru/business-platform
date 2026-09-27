@@ -4,7 +4,7 @@ test.describe('Routing & Access Control', () => {
 
   test('Landing page loads successfully', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('text=Business Management Platform').first()).toBeVisible();
+    await expect(page.locator('text=Nexus Finance').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Sign In' }).first()).toBeVisible();
   });
 

@@ -1,4 +1,4 @@
-# Business Platform
+# Nexus Finance
 
 This repository is organized to support a disciplined product and engineering workflow with explicit boundaries for application, data, module logic, testing, infrastructure, and operations.
 
