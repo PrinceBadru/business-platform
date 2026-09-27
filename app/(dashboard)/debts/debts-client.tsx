@@ -12,7 +12,7 @@ export function DebtsClient({ debts, canWrite }: { debts: any[], canWrite: boole
   const [search, setSearch] = useState('');
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatMoney = (cents: number) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(cents / 100);
   
   const filtered = debts.filter(d => 
     d.customerName?.toLowerCase().includes(search.toLowerCase())

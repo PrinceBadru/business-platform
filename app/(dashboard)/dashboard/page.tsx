@@ -16,7 +16,7 @@ export default async function DashboardOverviewPage() {
 
   const metrics = await getDashboardMetrics(session.accountId);
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatMoney = (cents: number) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(cents / 100);
 
   const goodsRevenue = metrics.typeStats.find(t => t.type === 'good')?.revenue || 0;
   const servicesRevenue = metrics.typeStats.find(t => t.type === 'service')?.revenue || 0;

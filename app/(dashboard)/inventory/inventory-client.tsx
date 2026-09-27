@@ -48,7 +48,7 @@ export function InventoryClient({ offerings, canWrite, businessType }: { offerin
   const activeOfferings = offerings.filter(o => o.isActive);
   const filtered = activeOfferings.filter(o => o.name.toLowerCase().includes(search.toLowerCase()));
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatMoney = (cents: number) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(cents / 100);
 
   return (
     <div className="space-y-6">

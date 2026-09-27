@@ -11,7 +11,7 @@ export function TransactionsClient({ transactions, canWrite }: { transactions: a
   const [search, setSearch] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatMoney = (cents: number) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(cents / 100);
   
   const filtered = transactions.filter(t => {
     const term = search.toLowerCase();

@@ -52,7 +52,7 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
   };
 
   const totalCents = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const formatMoney = (cents: number) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(cents / 100);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
