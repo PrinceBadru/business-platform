@@ -1,0 +1,11 @@
+:80, :443 {
+    # If a domain is specified, Caddy will automatically provision TLS certs
+    # Replace the above line with your domain, e.g. example.com {
+
+    # Proxy to Next.js app
+    reverse_proxy app:3000
+
+    # Optional: Serve static assets directly for better performance
+    # root * /srv/public
+    # file_server
+}
