@@ -7,8 +7,11 @@ import Link from 'next/link';
 
 export default async function DashboardOverviewPage() {
   const session = await getCurrentSession();
-  if (!session || !session.accountId) {
+  if (!session) {
     redirect('/sign-in');
+  }
+  if (!session.accountId) {
+    redirect('/onboarding');
   }
 
   const metrics = await getDashboardMetrics(session.accountId);

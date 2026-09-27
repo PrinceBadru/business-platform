@@ -11,7 +11,7 @@ export type Session = typeof schema.sessions.$inferSelect;
 /**
  * Creates a new server-side session and inserts it into the database.
  */
-export async function createSession(userId: string, ipAddress?: string, userAgent?: string): Promise<{ token: string, expiresAt: Date }> {
+export async function createSession(userId: string, ipAddress?: string, userAgent?: string, accountId?: string): Promise<{ token: string, expiresAt: Date }> {
   // Generate an opaque random 32-byte hex string
   const token = crypto.randomBytes(32).toString('hex');
   
@@ -21,6 +21,7 @@ export async function createSession(userId: string, ipAddress?: string, userAgen
   await db.insert(schema.sessions).values({
     id: token,
     userId,
+    accountId,
     expiresAt,
     ipAddress,
     userAgent

@@ -1,16 +1,26 @@
 import { db, client } from './drizzle';
 import * as schema from './schema';
 import { sql } from 'drizzle-orm';
+import * as argon2 from 'argon2';
 
 async function seed() {
   console.log('🌱 Seeding database...');
+
+  // Pre-hash the shared demo password once
+  const demoPasswordHash = await argon2.hash('password123', {
+    type: argon2.argon2id,
+    timeCost: 3,
+    memoryCost: 65536,
+    parallelism: 4,
+  });
+  console.log('✓ Demo password hash generated');
 
   // Reset database state safely for local development
   await db.execute(sql`
     TRUNCATE TABLE 
       users, accounts, locations, customers, suppliers, offerings, 
       transactions, transaction_lines, debts, debt_payments, 
-      user_account_roles, user_location_access, daily_summaries, jobs
+      user_account_roles, user_location_access, daily_summaries, jobs, sessions
     CASCADE;
   `);
 
@@ -35,8 +45,9 @@ async function seed() {
 
   const [acmeUser] = await db.insert(schema.users).values({
     email: 'admin@acmeretail.com',
+    username: 'acme_admin',
     name: 'Acme Admin',
-    passwordHash: 'dummy_hash' // Will be real hash in auth phase
+    passwordHash: demoPasswordHash
   }).returning();
 
   await db.insert(schema.userAccountRoles).values({
@@ -101,8 +112,9 @@ async function seed() {
 
   const [globexUser] = await db.insert(schema.users).values({
     email: 'admin@globex.com',
+    username: 'globex_admin',
     name: 'Globex Admin',
-    passwordHash: 'dummy_hash'
+    passwordHash: demoPasswordHash
   }).returning();
 
   await db.insert(schema.userAccountRoles).values({

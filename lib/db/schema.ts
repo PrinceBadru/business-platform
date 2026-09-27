@@ -38,6 +38,7 @@ const timestamps = {
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).unique(),
+  username: varchar('username', { length: 50 }).unique(),
   passwordHash: varchar('password_hash', { length: 255 }),
   name: varchar('name', { length: 255 }),
   ...timestamps

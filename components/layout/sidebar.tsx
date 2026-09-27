@@ -14,20 +14,20 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const activeAccount = accounts.find(a => a.id === activeAccountId);
-
+  
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Point of Sale", href: "/dashboard/checkout", icon: ShoppingCart },
-    { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
-    { name: "Debts", href: "/dashboard/debts", icon: Banknote },
-    { name: "Customers", href: "/dashboard/customers", icon: Contact },
-    { name: "Locations", href: "/dashboard/locations", icon: MapPin },
-    { name: "Team", href: "/dashboard/team", icon: Users },
-    { name: "Inventory", href: "/dashboard/inventory", icon: Package },
-    { name: "Suppliers", href: "/dashboard/suppliers", icon: Truck },
-    { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
-    { name: "Benchmarking", href: "/dashboard/benchmarking", icon: Users },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
+    { name: "Point of Sale", href: "/checkout", icon: ShoppingCart },
+    { name: "Transactions", href: "/transactions", icon: Receipt },
+    { name: "Debts", href: "/debts", icon: Banknote },
+    { name: "Customers", href: "/customers", icon: Contact },
+    { name: "Locations", href: "/locations", icon: MapPin },
+    { name: "Team", href: "/team", icon: Users },
+    { name: "Inventory", href: "/inventory", icon: Package },
+    { name: "Suppliers", href: "/suppliers", icon: Truck },
+    { name: "Billing", href: "/billing", icon: CreditCard },
+    { name: "Benchmarking", href: "/benchmarking", icon: Users },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   let filteredNav = navItems;

@@ -36,6 +36,13 @@
       "when": 1790245644152,
       "tag": "0004_account_settings_location_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790300000000,
+      "tag": "0005_add_username",
+      "breakpoints": true
     }
   ]
 }

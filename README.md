@@ -6,6 +6,7 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
 
 - **Multi-Tenant Architecture**: Strict data isolation at the database level and application-level tenant contexts to securely separate businesses.
 - **Dynamic Business Types**: Configuration-driven UI and logic that adapts based on the business type (Retail vs. Services).
+- **Flexible Authentication**: Users sign in with **email or username** and password. Passkeys (WebAuthn) can be registered as an alternative on any account. Usernames allow multiple users sharing the same email domain (e.g. a shared company inbox) to maintain distinct identities.
 - **Comprehensive Modules**:
   - **Inventory & Suppliers**: Manage stock, variants, categories, and track supplier orders.
   - **CRM & Customers**: Customer loyalty, purchase history, and contact management.
@@ -21,7 +22,7 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
 - **Database**: PostgreSQL
 - **ORM**: Drizzle ORM
 - **Styling**: Tailwind CSS & shadcn/ui
-- **Testing**: Playwright (E2E)
+- **Testing**: Vitest (Unit) & Playwright (E2E)
 
 ## Getting Started
 
@@ -57,21 +58,22 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
    | User | `postgres` |
    | Password | `postgres` |
 
-   > If you prefer a local Postgres install, skip this step and update `DATABASE_URL` in `.env.local` accordingly.
+   > If you prefer a local Postgres install, skip this step and update `POSTGRES_URL` in `.env.local` accordingly.
 
 4. **Environment Setup**
    Copy `.env.example` to `.env.local`:
    ```bash
    cp .env.example .env.local
    ```
-   The default `DATABASE_URL` in `.env.example` already points to the Docker container — no changes needed if you used `docker compose up`.
+   The default `POSTGRES_URL` in `.env.example` already points to the Docker container — no changes needed if you used `docker compose up`.
 
 5. **Database Setup**
-   Push the schema to the database and seed demo data:
+   Apply database migrations and seed demo data:
    ```bash
-   npm run db:push
+   npm run db:migrate
    npm run db:seed
    ```
+   *(If you modify `lib/db/schema.ts` in the future, run `npm run db:generate` first to generate new SQL migrations).*
 
 6. **Run the Application**
    Start the Next.js development server:
@@ -80,27 +82,52 @@ A robust, multi-tenant Business Management Platform built to handle Point of Sal
    ```
    Access the app at `http://localhost:3000`. Unauthenticated users are redirected to `/sign-in`.
 
+## Authentication
+
+### Sign In
+Navigate to `/sign-in`. The **Email or Username** field accepts either:
+- A full email address (`you@example.com`)
+- A username (`your_username`)
+
+The server detects which type was entered (by the presence of `@`) and looks up the account accordingly. Both password and passkey (WebAuthn) sign-in are supported.
+
+### Sign Up
+Navigate to `/sign-up`. New users must provide:
+- **Full Name** (optional display name)
+- **Username** — globally unique, 3–50 characters, letters/numbers/underscores only. This is the primary fallback identifier for businesses where multiple staff share an email domain.
+- **Email** — globally unique
+- **Password**
+
+After account creation, users are redirected to **`/onboarding`** to set up their first business before accessing the dashboard.
+
+### Onboarding (New Users)
+Users who sign up but have no tenant yet land on `/onboarding`. Here they define:
+- **Business name**
+- **Business type** (Retail / Services / Hybrid)
+- **First location name**
+
+This creates the account, assigns the user as Owner, grants location access, and binds the tenant to their session — then redirects to `/dashboard`.
+
 ## Demo Accounts
 
-Running `npm run db:seed` creates two isolated demo tenants. Authentication uses **passkeys (WebAuthn)** — register a passkey on first sign-in tied to the email below.
+Running `npm run db:seed` creates two isolated demo tenants with real, functional credentials. Both accounts support **password sign-in** (by email or username) and optionally **passkey (WebAuthn)** registration.
 
-| Tenant | Business Type | Email | Role |
-|---|---|---|---|
-| Acme Retail | Retail | `admin@acmeretail.com` | Owner |
-| Globex Services | Services | `admin@globex.com` | Owner |
-
-**To sign in:**
-1. Navigate to `http://localhost:3000/sign-in`
-2. Enter one of the emails above
-3. Follow the passkey / WebAuthn browser prompt to register or authenticate
+| Tenant | Business Type | Email | Username | Password |
+|---|---|---|---|---|
+| Acme Retail | Retail | `admin@acmeretail.com` | `acme_admin` | `password123` |
+| Globex Services | Services | `admin@globex.com` | `globex_admin` | `password123` |
 
 > [!NOTE]
 > Each tenant is fully isolated — signing in as `admin@acmeretail.com` will only show Acme Retail data, and vice versa.
 
 ## Running Tests
 
-End-to-end testing is configured via Playwright to ensure critical workflows (like routing and access control) function correctly in a real browser environment.
+### 1. Unit & Integration Tests (Vitest)
+```bash
+npm run test
+```
 
+### 2. End-to-End Tests (Playwright)
 1. **Install Playwright Browsers** (First time only)
    ```bash
    npx playwright install --with-deps chromium
@@ -117,7 +144,7 @@ End-to-end testing is configured via Playwright to ensure critical workflows (li
 This project follows a disciplined structure with explicit boundaries:
 
 - `app/`: Next.js application routes and UI shell.
-- `db/`: Database schema definitions, configurations, and seed assets.
+- `lib/db/`: Database schema definitions (`schema.ts`), Drizzle client, migrations (`migrations/`), and seed assets (`seed.ts`).
 - `modules/`: Domain modules (Analytics, CRM, Inventory, Transactions, etc.) with clear boundaries, keeping domain logic strictly separated from UI presentation.
 - `e2e/`: Browser-based end-to-end tests.
 - `production_artifacts/`: Release and handoff evidence generated during development.
