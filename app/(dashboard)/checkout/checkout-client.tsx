@@ -105,9 +105,9 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
       </div>
 
       {/* Cart Panel */}
-      <div className="w-full lg:w-[420px] flex flex-col h-[calc(100vh-8rem)]">
+      <div className="w-full lg:w-[380px] flex flex-col h-[calc(100vh-6rem)] max-h-[800px]">
         <Card className="flex flex-col h-full shadow-xl border-0 ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden bg-white/60 dark:bg-gray-950/60 backdrop-blur-xl">
-          <CardHeader className="bg-white/80 dark:bg-gray-950/80 border-b border-gray-100 dark:border-gray-800 px-6 py-5">
+          <CardHeader className="bg-white/80 dark:bg-gray-950/80 border-b border-gray-100 dark:border-gray-800 px-5 py-4 shrink-0">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -123,15 +123,15 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
             </CardTitle>
           </CardHeader>
           
-          <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/30 space-y-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <div className="px-5 py-3 bg-gray-50/50 dark:bg-gray-900/30 space-y-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <div className="flex flex-col gap-3">
               <div className="relative">
                 <select
                   value={locationId}
                   onChange={e => setLocationId(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none shadow-sm"
+                  className="w-full h-10 pl-3 pr-8 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none shadow-sm"
                 >
-                  <option value="" disabled>Select Store Location...</option>
+                  <option value="" disabled>Store Location...</option>
                   {locations.map((loc: any) => (
                     <option key={loc.id} value={loc.id}>{loc.name}</option>
                   ))}
@@ -145,7 +145,7 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
                 <select
                   value={customerId}
                   onChange={e => setCustomerId(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none shadow-sm"
+                  className="w-full h-10 pl-3 pr-8 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none shadow-sm"
                 >
                   <option value="">Walk-in Customer</option>
                   {customers.map((c: any) => (
@@ -159,7 +159,7 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
             </div>
           </div>
 
-          <CardContent className="flex-1 overflow-y-auto p-0 custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
+          <CardContent className="flex-1 overflow-y-auto p-0 min-h-0 custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -191,13 +191,13 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
             )}
           </CardContent>
 
-          <div className="bg-white dark:bg-gray-950 p-6 shrink-0 border-t border-dashed border-gray-200 dark:border-gray-800 z-10 relative">
+          <div className="bg-white dark:bg-gray-950 p-5 shrink-0 border-t border-dashed border-gray-200 dark:border-gray-800 z-10 relative">
             <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-50 dark:bg-gray-900 rounded-full border-b border-r border-gray-200 dark:border-gray-800"></div>
             <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-50 dark:bg-gray-900 rounded-full border-b border-l border-gray-200 dark:border-gray-800"></div>
             
-            <div className="flex justify-between items-end mb-6">
-              <span className="text-gray-500 font-medium text-lg">Total Due</span>
-              <span className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">
+            <div className="flex justify-between items-end mb-4">
+              <span className="text-gray-500 font-medium text-sm">Total Due</span>
+              <span className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
                 {formatMoney(totalCents)}
               </span>
             </div>
@@ -208,9 +208,9 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
               </div>
             )}
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               <Button 
-                className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all rounded-xl" 
+                className="w-full h-12 text-lg font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all rounded-lg" 
                 onClick={() => handleCheckout(false)} 
                 disabled={isPending || cart.length === 0 || !locationId}
               >
@@ -218,7 +218,7 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
               </Button>
               <Button 
                 variant="outline"
-                className="w-full h-12 text-base font-bold border-2 border-gray-200 dark:border-gray-800 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50" 
+                className="w-full h-10 text-sm font-bold border-2 border-gray-200 dark:border-gray-800 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50" 
                 onClick={() => handleCheckout(true)} 
                 disabled={isPending || cart.length === 0 || !locationId || !customerId}
               >
