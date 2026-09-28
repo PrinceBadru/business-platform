@@ -111,3 +111,38 @@ export async function adjustStock(offeringId: string, quantityAdded: number, rea
     revalidatePath('/dashboard/inventory');
   });
 }
+
+export async function updateOffering(offeringId: string, data: {
+  name?: string;
+  priceCents?: number;
+  costCents?: number;
+  supplierId?: string;
+}) {
+  return requirePermission('offerings:write')(async () => {
+    const session = await getCurrentSession();
+    if (!session?.accountId) throw new Error('No active account');
+    const accountId = session.accountId;
+
+    if ((data.costCents !== undefined && data.costCents < 0) || (data.priceCents !== undefined && data.priceCents < 0)) {
+      throw new Error('Money values cannot be negative');
+    }
+
+    await withTenantContext(accountId, async (tx) => {
+      await tx.update(offerings)
+        .set(data)
+        .where(and(eq(offerings.id, offeringId), eq(offerings.accountId, accountId)));
+        
+      const { auditLogs } = await import('@/lib/db/schema');
+      await tx.insert(auditLogs).values({
+        accountId,
+        userId: session.userId,
+        action: 'updated_offering',
+        entityType: 'offering',
+        entityId: offeringId,
+        details: data
+      });
+    });
+
+    revalidatePath('/dashboard/inventory');
+  });
+}
