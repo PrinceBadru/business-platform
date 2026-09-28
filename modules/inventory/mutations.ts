@@ -17,11 +17,16 @@ export async function createOffering(data: {
   priceCents: number;
   currentStock?: number;
   reorderThreshold?: number;
+  supplierId?: string;
 }) {
   return requirePermission('offerings:write')(async () => {
     const session = await getCurrentSession();
     if (!session?.accountId) throw new Error('No active account');
     const accountId = session.accountId;
+
+    if (data.itemType === 'good' && !data.supplierId) {
+      throw new Error('A registered supplier must be selected for physical goods.');
+    }
 
     if (data.costCents < 0 || data.priceCents < 0) {
       throw new Error('Money values cannot be negative');
@@ -60,6 +65,46 @@ export async function archiveOffering(offeringId: string) {
     await withTenantContext(accountId, async (tx) => {
       await tx.update(offerings)
         .set({ isActive: false })
+        .where(and(eq(offerings.id, offeringId), eq(offerings.accountId, accountId)));
+    });
+
+    revalidatePath('/dashboard/inventory');
+  });
+}
+
+export async function adjustStock(offeringId: string, quantityAdded: number, reason: string) {
+  return requirePermission('offerings:write')(async () => {
+    const session = await getCurrentSession();
+    if (!session?.accountId) throw new Error('No active account');
+    if (!session?.locationId) throw new Error('A location must be selected to adjust stock');
+    const accountId = session.accountId;
+    const locationId = session.locationId;
+
+    if (quantityAdded === 0) throw new Error('Quantity cannot be zero');
+
+    await withTenantContext(accountId, async (tx) => {
+      await tx.insert(stockMovements).values({
+        accountId,
+        locationId,
+        offeringId,
+        quantityChange: quantityAdded,
+        reason,
+        createdBy: session.userId,
+      });
+
+      const { auditLogs } = await import('@/lib/db/schema');
+      await tx.insert(auditLogs).values({
+        accountId,
+        userId: session.userId,
+        action: 'stock_adjustment',
+        entityType: 'offering',
+        entityId: offeringId,
+        details: { quantityAdded, reason }
+      });
+      
+      const { sql } = await import('drizzle-orm');
+      await tx.update(offerings)
+        .set({ currentStock: sql`${offerings.currentStock} + ${quantityAdded}` })
         .where(and(eq(offerings.id, offeringId), eq(offerings.accountId, accountId)));
     });
 

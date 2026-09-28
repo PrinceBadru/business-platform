@@ -67,12 +67,19 @@ async function seed() {
     phone: '555-0100'
   }).returning();
 
+  const [acmeSupplier] = await db.insert(schema.suppliers).values({
+    accountId: acmeAccount.id,
+    name: 'Global Parts Inc.',
+    contactInfo: 'support@globalparts.com'
+  }).returning();
+
   const [acmeOffering] = await db.insert(schema.offerings).values({
     accountId: acmeAccount.id,
     name: 'Premium Widget',
     category: 'Hardware',
     itemType: 'good',
     tracksStock: true,
+    supplierId: acmeSupplier.id,
     currentStock: 50,
     priceCents: 1500, // $15.00
     costCents: 800
