@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Activity, Search, User } from 'lucide-react';
+import { Activity, Search, User, Plus, Trash2, Edit2, Box, Package, Archive, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 type AuditLog = {
@@ -81,39 +81,81 @@ export function ActivityClient({ logs }: { logs: AuditLog[] }) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950">
-            {filtered.map(log => (
-              <div key={log.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                <div className="mt-1 bg-gray-100 dark:bg-gray-800 p-2 rounded-full h-fit">
-                  <User className="w-4 h-4 text-gray-500" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">
-                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                      {log.user?.name || log.user?.email || 'System'}
-                    </span>
-                    {' '}performed{' '}
-                    <span className="font-semibold">{formatAction(log.action)}</span>
-                    {' '}on{' '}
-                    <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300">
-                      {log.entityType}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
-                    {log.entityId && ` • ID: ${log.entityId.substring(0, 8)}...`}
-                  </p>
-                  {log.details && Object.keys(log.details).length > 0 && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-2 rounded-md mt-2 border border-gray-100 dark:border-gray-800">
-                      {formatDetails(log.action, log.details)}
+          <div className="relative border-l-2 border-gray-100 dark:border-gray-800 ml-4 md:ml-6 space-y-8 pb-4">
+            {filtered.map((log, index) => {
+              const isCreate = log.action.includes('create');
+              const isArchive = log.action.includes('archive') || log.action.includes('delete');
+              const isUpdate = log.action.includes('update') || log.action.includes('adjust');
+              
+              let Icon = Settings;
+              let iconColor = 'text-gray-500';
+              let iconBg = 'bg-gray-100 dark:bg-gray-800';
+              let ringColor = 'ring-gray-50 dark:ring-gray-900';
+
+              if (isCreate) {
+                Icon = Plus;
+                iconColor = 'text-green-600 dark:text-green-400';
+                iconBg = 'bg-green-100 dark:bg-green-900/30';
+                ringColor = 'ring-green-50 dark:ring-green-950';
+              } else if (isArchive) {
+                Icon = Archive;
+                iconColor = 'text-red-600 dark:text-red-400';
+                iconBg = 'bg-red-100 dark:bg-red-900/30';
+                ringColor = 'ring-red-50 dark:ring-red-950';
+              } else if (isUpdate) {
+                Icon = Edit2;
+                iconColor = 'text-blue-600 dark:text-blue-400';
+                iconBg = 'bg-blue-100 dark:bg-blue-900/30';
+                ringColor = 'ring-blue-50 dark:ring-blue-950';
+              }
+
+              if (log.entityType === 'offering') Icon = Package;
+              if (log.entityType === 'stock_movement') Icon = Box;
+
+              return (
+                <div key={log.id} className="relative pl-8 md:pl-12 group">
+                  <div className={`absolute -left-[17px] top-1 p-2 rounded-full ${iconBg} ring-8 ${ringColor} transition-transform group-hover:scale-110`}>
+                    <Icon className={`w-4 h-4 ${iconColor}`} />
+                  </div>
+                  
+                  <div className="bg-white dark:bg-gray-950 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <span className="font-bold text-gray-900 dark:text-white mr-1">
+                          {log.user?.name || log.user?.email || 'System'}
+                        </span>
+                        performed
+                        <span className="font-bold ml-1">{formatAction(log.action)}</span>
+                        <span className="text-gray-500 mx-1">on</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                          {log.entityType}
+                        </span>
+                      </p>
+                      <span className="text-xs font-medium text-gray-400 shrink-0 whitespace-nowrap">
+                        {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                      </span>
                     </div>
-                  )}
+                    
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-900/50 px-4 py-3 rounded-xl border border-gray-100/50 dark:border-gray-800/50">
+                        {formatDetails(log.action, log.details)}
+                      </div>
+                    )}
+                    
+                    {log.entityId && (
+                      <p className="mt-3 text-[11px] font-mono text-gray-400">
+                        REF: {log.entityId}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            
             {filtered.length === 0 && (
-              <div className="p-8 text-center text-gray-500 italic">
-                No activity found.
+              <div className="pl-8 py-12 text-center text-gray-500 italic relative">
+                <div className="absolute -left-[9px] top-12 w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-800"></div>
+                No activity found matching your search.
               </div>
             )}
           </div>
