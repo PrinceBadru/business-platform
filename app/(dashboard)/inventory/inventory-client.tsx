@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { createOffering, archiveOffering, adjustStock } from '@/modules/inventory/mutations';
-import { Package, Plus, Archive, Box, ArrowDownToLine } from 'lucide-react';
+import { createOffering, archiveOffering, adjustStock, updateOffering } from '@/modules/inventory/mutations';
+import { Package, Plus, Archive, Box, Edit2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export function InventoryClient({ 
@@ -30,26 +30,41 @@ export function InventoryClient({
   const [costStr, setCostStr] = useState('');
   const [supplierId, setSupplierId] = useState('');
   
-  const [adjustItemId, setAdjustItemId] = useState<string | null>(null);
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [adjustQuantity, setAdjustQuantity] = useState('');
-  const [adjustReason, setAdjustReason] = useState('supplier_delivery');
+  const [adjustReason, setAdjustReason] = useState('inventory_correction');
+  const [editPriceStr, setEditPriceStr] = useState('');
   
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleAdjustStock = () => {
-    if (!adjustItemId || !adjustQuantity) return;
+    if (!openItemId || !adjustQuantity) return;
     const qty = parseInt(adjustQuantity, 10);
     if (isNaN(qty) || qty === 0) return;
     
     setErrorMsg(null);
     startTransition(async () => {
       try {
-        await adjustStock(adjustItemId, qty, adjustReason);
-        setAdjustItemId(null);
+        await adjustStock(openItemId, qty, adjustReason);
         setAdjustQuantity('');
-        setAdjustReason('supplier_delivery');
+        setAdjustReason('inventory_correction');
       } catch (err: any) {
         setErrorMsg(err.message || 'An unexpected error occurred while adjusting stock.');
+      }
+    });
+  };
+
+  const handleUpdateOffering = () => {
+    if (!openItemId || !editPriceStr) return;
+    const priceCents = Math.round(parseFloat(editPriceStr) * 100);
+    
+    setErrorMsg(null);
+    startTransition(async () => {
+      try {
+        await updateOffering(openItemId, { priceCents });
+        setEditPriceStr('');
+      } catch (err: any) {
+        setErrorMsg(err.message || 'An unexpected error occurred while updating offering.');
       }
     });
   };
@@ -214,27 +229,58 @@ export function InventoryClient({
                 </div>
                 <div className="flex items-center gap-4">
                   {item.tracksStock && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Stock: {item.currentStock}</span>
-                      {canWrite && (
-                        <Dialog open={adjustItemId === item.id} onOpenChange={(open) => !open && setAdjustItemId(null)}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setAdjustItemId(item.id)}>
-                              <ArrowDownToLine className="w-4 h-4 mr-1" /> Receive
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Receive Stock for {item.name}</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
+                    <span className="text-sm font-medium">Stock: {item.currentStock}</span>
+                  )}
+                  {canWrite && (
+                    <Dialog open={openItemId === item.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setOpenItemId(null);
+                        setEditPriceStr('');
+                      } else {
+                        setOpenItemId(item.id);
+                        setEditPriceStr((item.priceCents / 100).toString());
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Edit2 className="w-4 h-4 mr-2" /> Open
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Manage: {item.name}</DialogTitle>
+                        </DialogHeader>
+                        
+                        <div className="space-y-6 py-2">
+                          {/* Edit Details Section */}
+                          <div className="space-y-4 border-b pb-6">
+                            <h4 className="text-sm font-medium text-gray-500 uppercase">Offering Details</h4>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Price ($)</label>
+                              <div className="flex gap-2">
+                                <Input 
+                                  type="number" 
+                                  step="0.01"
+                                  value={editPriceStr} 
+                                  onChange={e => setEditPriceStr(e.target.value)}
+                                />
+                                <Button onClick={handleUpdateOffering} disabled={isPending || !editPriceStr}>Save</Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Stock Adjustment Section */}
+                          {item.tracksStock && (
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-medium text-gray-500 uppercase">Adjust Stock</h4>
+                              <p className="text-sm text-gray-500 mb-2">Current Stock: <strong className="text-gray-900 dark:text-gray-50">{item.currentStock}</strong></p>
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">Quantity Received</label>
+                                <label className="text-sm font-medium">Quantity Change (+ or -)</label>
                                 <Input 
                                   type="number" 
                                   value={adjustQuantity} 
                                   onChange={e => setAdjustQuantity(e.target.value)}
-                                  placeholder="e.g. 50"
+                                  placeholder="e.g. 50 to add, -10 to reduce"
                                 />
                               </div>
                               <div className="space-y-2">
@@ -244,24 +290,25 @@ export function InventoryClient({
                                   onChange={e => setAdjustReason(e.target.value)}
                                   className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 dark:border-gray-800 dark:bg-gray-950"
                                 >
+                                  <option value="inventory_correction">Inventory Correction (Miscount/Shrinkage)</option>
                                   <option value="supplier_delivery">Supplier Delivery</option>
                                   <option value="customer_return">Customer Return</option>
-                                  <option value="inventory_correction">Inventory Correction (Count)</option>
                                 </select>
                               </div>
-                              {errorMsg && (
-                                <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm border border-red-200">
-                                  {errorMsg}
-                                </div>
-                              )}
                               <Button className="w-full" onClick={handleAdjustStock} disabled={isPending || !adjustQuantity}>
                                 {isPending ? 'Updating...' : 'Update Stock Ledger'}
                               </Button>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      )}
-                    </div>
+                          )}
+                          
+                          {errorMsg && (
+                            <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm border border-red-200 mt-4">
+                              {errorMsg}
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   )}
                   {canWrite && (
                     <Button 
