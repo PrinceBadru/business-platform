@@ -6,6 +6,7 @@ export type Permission =
   | 'offerings:read' | 'offerings:write'
   | 'transactions:read' | 'transactions:write'
   | 'billing:manage' | 'account:delete'
+  | 'dashboard:read'
   | '*';
 
 export const rolePermissions: Record<Role, Permission[]> = {
@@ -14,18 +15,21 @@ export const rolePermissions: Record<Role, Permission[]> = {
     'locations:read', 'locations:write', 
     'users:read', 'users:manage',
     'offerings:read', 'offerings:write',
-    'transactions:read', 'transactions:write'
+    'transactions:read', 'transactions:write',
+    'dashboard:read'
   ],
   manager: [
     'locations:read', 
     'users:read',
     'offerings:read', 'offerings:write',
-    'transactions:read', 'transactions:write'
+    'transactions:read', 'transactions:write',
+    'dashboard:read'
   ],
   employee: [
     'locations:read',
     'offerings:read',
-    'transactions:read', 'transactions:write'
+    'transactions:read', 'transactions:write',
+    'dashboard:read'
   ]
 };
 

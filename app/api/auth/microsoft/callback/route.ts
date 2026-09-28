@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { users, identityProviders, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { setSessionCookie } from "@/modules/auth/session";
 
 export async function GET(request: NextRequest) {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(identityProviders.provider, "microsoft"),
-          eq(identityProviders.providerId, microsoftUser.sub)
+          eq(identityProviders.providerSubject, microsoftUser.sub)
         )
       );
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         await db.insert(identityProviders).values({
           userId,
           provider: "microsoft",
-          providerId: microsoftUser.sub,
+          providerSubject: microsoftUser.sub,
         });
       } else {
         // Create new user
@@ -73,18 +73,19 @@ export async function GET(request: NextRequest) {
         await db.insert(identityProviders).values({
           userId,
           provider: "microsoft",
-          providerId: microsoftUser.sub,
+          providerSubject: microsoftUser.sub,
         });
       }
     }
 
     // Create a new session
     const [session] = await db.insert(sessions).values({
+      id: randomUUID(),
       userId,
       userAgent: request.headers.get('user-agent'),
       ipAddress: request.headers.get('x-forwarded-for') || '127.0.0.1',
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // 30 days
-    }).returning({ id: sessions.id });
+    }).returning({ id: sessions.id, expiresAt: sessions.expiresAt });
 
     await setSessionCookie(session.id, session.expiresAt);
 

@@ -13,7 +13,7 @@ type AuditLog = {
   entityId: string | null;
   details: any;
   createdAt: Date;
-  user: { name: string | null; email: string; } | null;
+  user: { name: string | null; email: string | null; } | null;
 };
 
 export function ActivityClient({ logs }: { logs: AuditLog[] }) {
@@ -23,7 +23,7 @@ export function ActivityClient({ logs }: { logs: AuditLog[] }) {
     log.action.toLowerCase().includes(search.toLowerCase()) || 
     log.entityType.toLowerCase().includes(search.toLowerCase()) ||
     log.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    log.user?.email.toLowerCase().includes(search.toLowerCase())
+    log.user?.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   const formatAction = (action: string) => {

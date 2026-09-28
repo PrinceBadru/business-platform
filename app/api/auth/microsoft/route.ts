@@ -7,9 +7,7 @@ export async function GET() {
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
 
-  const url = microsoft.createAuthorizationURL(state, codeVerifier, {
-    scopes: ["profile", "email"]
-  });
+  const url = microsoft.createAuthorizationURL(state, codeVerifier, ["profile", "email"]);
 
   const cookieStore = await cookies();
   cookieStore.set("microsoft_oauth_state", state, {

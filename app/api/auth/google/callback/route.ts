@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(identityProviders.provider, "google"),
-          eq(identityProviders.providerId, googleUser.sub)
+          eq(identityProviders.providerSubject, googleUser.sub)
         )
       );
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         await db.insert(identityProviders).values({
           userId,
           provider: "google",
-          providerId: googleUser.sub,
+          providerSubject: googleUser.sub,
         });
       } else {
         // Create new user
@@ -73,18 +73,19 @@ export async function GET(request: NextRequest) {
         await db.insert(identityProviders).values({
           userId,
           provider: "google",
-          providerId: googleUser.sub,
+          providerSubject: googleUser.sub,
         });
       }
     }
 
     // Create a new session
     const [session] = await db.insert(sessions).values({
+      id: crypto.randomUUID(),
       userId,
       userAgent: request.headers.get('user-agent'),
       ipAddress: request.headers.get('x-forwarded-for') || '127.0.0.1',
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // 30 days
-    }).returning({ id: sessions.id });
+    }).returning({ id: sessions.id, expiresAt: sessions.expiresAt });
 
     await setSessionCookie(session.id, session.expiresAt);
 
