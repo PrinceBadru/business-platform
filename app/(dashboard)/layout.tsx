@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { getCurrentSession } from '@/modules/auth/session';
 import { db } from '@/lib/db/drizzle';
-import { accounts, userAccountRoles, users } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { accounts, userAccountRoles, users, userLocationAccess, locations } from '@/lib/db/schema';
+import { eq, inArray, and } from 'drizzle-orm';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { redirect } from 'next/navigation';
@@ -32,6 +32,28 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const activeAccountId = session.accountId || accountIds[0] || null;
 
+  // 4. Load Locations for Active Account
+  let userLocations: { id: string; name: string }[] = [];
+  if (activeAccountId) {
+    const access = await db
+      .select({
+        id: locations.id,
+        name: locations.name,
+      })
+      .from(userLocationAccess)
+      .innerJoin(locations, eq(locations.id, userLocationAccess.locationId))
+      .where(
+        and(
+          eq(userLocationAccess.userId, session.userId),
+          eq(userLocationAccess.accountId, activeAccountId)
+        )
+      );
+    userLocations = access;
+  }
+
+  // 5. Fallback location
+  const activeLocationId = session.locationId || (userLocations.length > 0 ? userLocations[0].id : null);
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
       <Sidebar 
@@ -39,7 +61,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         activeAccountId={activeAccountId} 
       />
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Topbar userName={user?.name ?? undefined} />
+        <Topbar 
+          userName={user?.name ?? undefined} 
+          locations={userLocations}
+          activeLocationId={activeLocationId}
+        />
         <div className="flex-1 overflow-auto p-6">
           {children}
         </div>

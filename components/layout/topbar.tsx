@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
-import { Search, Bell, LogOut, User } from 'lucide-react';
+import { Search, Bell, LogOut, User, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { switchLocation } from '@/modules/accounts/switcher';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -17,7 +18,15 @@ type SearchResult = {
   href: string;
 };
 
-export function Topbar({ userName }: { userName?: string }) {
+export function Topbar({ 
+  userName,
+  locations = [],
+  activeLocationId = null
+}: { 
+  userName?: string,
+  locations?: { id: string; name: string }[],
+  activeLocationId?: string | null
+}) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -121,6 +130,27 @@ export function Topbar({ userName }: { userName?: string }) {
 
       {/* Right side */}
       <div className="flex items-center gap-4">
+        {locations.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden md:flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                {locations.find(l => l.id === activeLocationId)?.name || 'Select Location'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {locations.map(loc => (
+                <DropdownMenuItem 
+                  key={loc.id}
+                  onClick={() => startTransition(() => switchLocation(loc.id))}
+                  className="cursor-pointer"
+                >
+                  {loc.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5 text-gray-500" />
         </Button>
