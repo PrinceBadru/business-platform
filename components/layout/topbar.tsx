@@ -25,7 +25,8 @@ export function Topbar({
 }: { 
   userName?: string,
   locations?: { id: string; name: string }[],
-  activeLocationId?: string | null
+  activeLocationId?: string | null,
+  activeRole?: string
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -172,11 +173,13 @@ export function Topbar({
                 <DropdownMenuSeparator />
               </>
             )}
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="cursor-pointer">
-                <User className="h-4 w-4 mr-2" /> Profile & Settings
-              </Link>
-            </DropdownMenuItem>
+            {activeRole !== 'employee' && (
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="cursor-pointer">
+                  <User className="h-4 w-4 mr-2" /> Profile & Settings
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/api/auth/signout" className="cursor-pointer text-red-500 hover:text-red-600">

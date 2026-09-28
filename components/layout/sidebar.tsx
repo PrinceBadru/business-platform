@@ -10,7 +10,7 @@ import { switchAccount } from '@/modules/account/actions';
 
 type Account = { id: string; name: string; businessType: 'retail' | 'services' | 'hybrid' };
 
-export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], activeAccountId: string | null }) {
+export function Sidebar({ accounts, activeAccountId, activeRole = 'employee' }: { accounts: Account[], activeAccountId: string | null, activeRole?: string }) {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const activeAccount = accounts.find(a => a.id === activeAccountId);
@@ -32,8 +32,19 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
   ];
 
   let filteredNav = navItems;
+
+  // Role-based filtering
+  if (activeRole === 'employee') {
+    const allowed = ['Dashboard', 'Point of Sale', 'Customers', 'Inventory'];
+    filteredNav = filteredNav.filter(item => allowed.includes(item.name));
+  } else if (activeRole === 'manager') {
+    const hidden = ['Settings'];
+    filteredNav = filteredNav.filter(item => !hidden.includes(item.name));
+  }
+
+  // Business type filtering
   if (activeAccount?.businessType === 'services') {
-    filteredNav = navItems.filter(item => !['Suppliers'].includes(item.name));
+    filteredNav = filteredNav.filter(item => !['Suppliers'].includes(item.name));
   }
 
   return (
@@ -68,10 +79,10 @@ export function Sidebar({ accounts, activeAccountId }: { accounts: Account[], ac
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-gray-50"
+                  ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground shadow-sm"
+                  : "text-gray-500 hover:bg-gray-100/50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-gray-50"
               )}
             >
               <item.icon className="w-5 h-5" />
