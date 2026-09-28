@@ -30,6 +30,31 @@ export function ActivityClient({ logs }: { logs: AuditLog[] }) {
     return action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
+  const formatDetails = (action: string, details: any) => {
+    if (!details || Object.keys(details).length === 0) return null;
+    
+    if (action === 'stock_adjustment') {
+      const qty = details.quantityAdded;
+      const reason = details.reason ? details.reason.split('_').map((w:string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Unknown';
+      return `Adjusted stock by ${qty > 0 ? '+' : ''}${qty} (${reason})`;
+    }
+    
+    if (action === 'updated_offering') {
+      const updates = [];
+      if (details.priceCents !== undefined) updates.push(`price to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(details.priceCents / 100)}`);
+      if (details.costCents !== undefined) updates.push(`cost to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(details.costCents / 100)}`);
+      if (details.name !== undefined) updates.push(`name to "${details.name}"`);
+      return updates.length > 0 ? `Updated ${updates.join(', ')}` : 'Updated offering details';
+    }
+    
+    // Generic fallback for any other JSON details
+    const parts = Object.entries(details).map(([k, v]) => {
+      const key = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+      return `${key}: ${v}`;
+    });
+    return parts.join(' • ');
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
@@ -79,9 +104,9 @@ export function ActivityClient({ logs }: { logs: AuditLog[] }) {
                     {log.entityId && ` • ID: ${log.entityId.substring(0, 8)}...`}
                   </p>
                   {log.details && Object.keys(log.details).length > 0 && (
-                    <pre className="text-[10px] text-gray-500 bg-gray-50 dark:bg-gray-900 p-2 rounded mt-2 overflow-x-auto max-w-full">
-                      {JSON.stringify(log.details, null, 2)}
-                    </pre>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-2 rounded-md mt-2 border border-gray-100 dark:border-gray-800">
+                      {formatDetails(log.action, log.details)}
+                    </div>
                   )}
                 </div>
               </div>
