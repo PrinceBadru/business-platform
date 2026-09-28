@@ -215,22 +215,42 @@ export function InventoryClient({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(item => (
-              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                    <Box className="w-5 h-5 text-gray-500" />
+              <div 
+                key={item.id} 
+                className="group relative flex flex-col bg-white dark:bg-gray-950 p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Box className="w-6 h-6 text-primary" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-lg">{item.name}</p>
-                    <p className="text-sm text-gray-500 capitalize">{item.itemType} • {formatMoney(item.priceCents)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {item.tracksStock && (
-                    <span className="text-sm font-medium">Stock: {item.currentStock}</span>
+                  {canWrite && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleArchive(item.id)}
+                      disabled={isPending}
+                    >
+                      <Archive className="w-4 h-4" />
+                    </Button>
                   )}
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-50">{item.name}</h3>
+                  <p className="text-sm text-gray-500 capitalize mb-4">{item.itemType}</p>
+                </div>
+
+                <div className="flex items-end justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{formatMoney(item.priceCents)}</p>
+                    {item.tracksStock && (
+                      <p className="text-sm font-medium text-gray-500 mt-1">Stock: {item.currentStock}</p>
+                    )}
+                  </div>
+                  
                   {canWrite && (
                     <Dialog open={openItemId === item.id} onOpenChange={(open) => {
                       if (!open) {
@@ -242,8 +262,8 @@ export function InventoryClient({
                       }
                     }}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Edit2 className="w-4 h-4 mr-2" /> Open
+                        <Button variant="secondary" size="sm" className="rounded-full shadow-sm hover:bg-primary hover:text-primary-foreground transition-colors">
+                          <Edit2 className="w-4 h-4 mr-2" /> Manage
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
@@ -254,7 +274,7 @@ export function InventoryClient({
                         <div className="space-y-6 py-2">
                           {/* Edit Details Section */}
                           <div className="space-y-4 border-b pb-6">
-                            <h4 className="text-sm font-medium text-gray-500 uppercase">Offering Details</h4>
+                            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Offering Details</h4>
                             <div className="space-y-2">
                               <label className="text-sm font-medium">Price ($)</label>
                               <div className="flex gap-2">
@@ -263,8 +283,9 @@ export function InventoryClient({
                                   step="0.01"
                                   value={editPriceStr} 
                                   onChange={e => setEditPriceStr(e.target.value)}
+                                  className="h-11"
                                 />
-                                <Button onClick={handleUpdateOffering} disabled={isPending || !editPriceStr}>Save</Button>
+                                <Button onClick={handleUpdateOffering} disabled={isPending || !editPriceStr} className="h-11 px-6">Save</Button>
                               </div>
                             </div>
                           </div>
@@ -272,7 +293,7 @@ export function InventoryClient({
                           {/* Stock Adjustment Section */}
                           {item.tracksStock && (
                             <div className="space-y-4">
-                              <h4 className="text-sm font-medium text-gray-500 uppercase">Adjust Stock</h4>
+                              <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Adjust Stock</h4>
                               <p className="text-sm text-gray-500 mb-2">Current Stock: <strong className="text-gray-900 dark:text-gray-50">{item.currentStock}</strong></p>
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Quantity Change (+ or -)</label>
@@ -281,6 +302,7 @@ export function InventoryClient({
                                   value={adjustQuantity} 
                                   onChange={e => setAdjustQuantity(e.target.value)}
                                   placeholder="e.g. 50 to add, -10 to reduce"
+                                  className="h-11"
                                 />
                               </div>
                               <div className="space-y-2">
@@ -288,14 +310,14 @@ export function InventoryClient({
                                 <select
                                   value={adjustReason}
                                   onChange={e => setAdjustReason(e.target.value)}
-                                  className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 dark:border-gray-800 dark:bg-gray-950"
+                                  className="flex h-11 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 dark:border-gray-800 dark:bg-gray-950"
                                 >
                                   <option value="inventory_correction">Inventory Correction (Miscount/Shrinkage)</option>
                                   <option value="supplier_delivery">Supplier Delivery</option>
                                   <option value="customer_return">Customer Return</option>
                                 </select>
                               </div>
-                              <Button className="w-full" onClick={handleAdjustStock} disabled={isPending || !adjustQuantity}>
+                              <Button className="w-full h-11" onClick={handleAdjustStock} disabled={isPending || !adjustQuantity}>
                                 {isPending ? 'Updating...' : 'Update Stock Ledger'}
                               </Button>
                             </div>
@@ -310,20 +332,16 @@ export function InventoryClient({
                       </DialogContent>
                     </Dialog>
                   )}
-                  {canWrite && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                      onClick={() => handleArchive(item.id)}
-                      disabled={isPending}
-                    >
-                      <Archive className="w-4 h-4" />
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
+            
+            {filtered.length === 0 && (
+              <div className="col-span-full py-12 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-800">
+                <Package className="w-12 h-12 text-gray-300 dark:text-gray-700" />
+                <p className="text-gray-500 font-medium">No items found matching your criteria.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
