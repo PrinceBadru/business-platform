@@ -218,11 +218,11 @@ export function CheckoutClient({ offerings, customers, locations }: any) {
               </Button>
               <Button 
                 variant="outline"
-                className="w-full h-10 text-sm font-bold border-2 border-gray-200 dark:border-gray-800 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50" 
+                className="w-full h-10 text-sm font-bold border-2 border-gray-200 dark:border-gray-800 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50 whitespace-nowrap" 
                 onClick={() => handleCheckout(true)} 
                 disabled={isPending || cart.length === 0 || !locationId || !customerId}
               >
-                Add to Customer Tab
+                Record as Credit
               </Button>
             </div>
           </div>
