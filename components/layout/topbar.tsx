@@ -21,7 +21,8 @@ type SearchResult = {
 export function Topbar({ 
   userName,
   locations = [],
-  activeLocationId = null
+  activeLocationId = null,
+  activeRole = 'employee'
 }: { 
   userName?: string,
   locations?: { id: string; name: string }[],
