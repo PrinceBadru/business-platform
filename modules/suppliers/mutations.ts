@@ -40,3 +40,28 @@ export async function archiveSupplier(supplierId: string) {
     revalidatePath('/dashboard/suppliers');
   });
 }
+
+export async function getSupplierDeliveries(supplierId: string) {
+  const session = await getCurrentSession();
+  if (!session?.accountId) throw new Error('No active account');
+  const accountId = session.accountId;
+  const { offerings, stockMovements } = await import('@/lib/db/schema');
+  const { desc } = await import('drizzle-orm');
+
+  return withTenantContext(accountId, async (tx) => {
+    return tx.select({
+      id: stockMovements.id,
+      quantityAdded: stockMovements.quantityChange,
+      offeringName: offerings.name,
+      date: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .innerJoin(offerings, eq(stockMovements.offeringId, offerings.id))
+    .where(and(
+      eq(offerings.supplierId, supplierId),
+      eq(stockMovements.reason, 'supplier_delivery')
+    ))
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(20);
+  });
+}

@@ -41,8 +41,8 @@ export function ActivityClient({ logs }: { logs: AuditLog[] }) {
     
     if (action === 'updated_offering') {
       const updates = [];
-      if (details.priceCents !== undefined) updates.push(`price to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(details.priceCents / 100)}`);
-      if (details.costCents !== undefined) updates.push(`cost to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(details.costCents / 100)}`);
+      if (details.priceCents !== undefined) updates.push(`price to ${new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(details.priceCents / 100)}`);
+      if (details.costCents !== undefined) updates.push(`cost to ${new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(details.costCents / 100)}`);
       if (details.name !== undefined) updates.push(`name to "${details.name}"`);
       return updates.length > 0 ? `Updated ${updates.join(', ')}` : 'Updated offering details';
     }

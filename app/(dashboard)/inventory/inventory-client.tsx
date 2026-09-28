@@ -152,7 +152,7 @@ export function InventoryClient({
                 </div>
               )}
               <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium">Price ($)</label>
+                <label className="text-sm font-medium">Price (UGX)</label>
                 <Input 
                   type="number"
                   step="0.01"
@@ -163,7 +163,7 @@ export function InventoryClient({
                 />
               </div>
               <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium">Cost ($)</label>
+                <label className="text-sm font-medium">Cost (UGX)</label>
                 <Input 
                   type="number"
                   step="0.01"
@@ -276,7 +276,7 @@ export function InventoryClient({
                           <div className="space-y-4 border-b pb-6">
                             <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Offering Details</h4>
                             <div className="space-y-2">
-                              <label className="text-sm font-medium">Price ($)</label>
+                              <label className="text-sm font-medium">Price (UGX)</label>
                               <div className="flex gap-2">
                                 <Input 
                                   type="number" 
