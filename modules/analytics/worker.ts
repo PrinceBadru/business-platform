@@ -14,6 +14,7 @@ import {
 import { eq, and, sql, lte, inArray } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 import { computeL1Snapshots } from './snapshots';
+import { evaluateAnomalyAlerts } from './alerts';
 
 const SLEEP_MS = 5000;
 const BATCH_SIZE = 50;
@@ -228,6 +229,8 @@ export async function startAnalyticsWorker() {
           );
 
           await computeL1Snapshots(scope.account_id as string, scope.location_id as string | null);
+          
+          await evaluateAnomalyAlerts(scope.account_id as string);
 
           // Mark success
           await db.update(analyticsDirtyScopes)
