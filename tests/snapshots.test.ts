@@ -51,7 +51,7 @@ describe('Analytics L1 Snapshots', () => {
     // Insert a dummy pending scope
     await db.insert(schema.analyticsDirtyScopes).values({
       accountId: acmeAccountId,
-      locationId: 'dummy-loc',
+      locationId: null,
       businessDate: '2023-01-01',
       metricFamiliesDirty: ['revenue'],
       status: 'pending'

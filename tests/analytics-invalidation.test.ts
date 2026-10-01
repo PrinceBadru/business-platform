@@ -8,6 +8,10 @@ import { processCheckout } from '../modules/checkout/mutations';
 import * as sessionModule from '../modules/auth/session';
 import * as rbacGuard from '../modules/rbac/guard';
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
 describe('Analytics Invalidation & Idempotency', () => {
   let acmeAccountId: string;
   let adminUserId: string;

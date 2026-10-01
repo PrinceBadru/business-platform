@@ -317,7 +317,8 @@ export const analyticsDirtyScopes = pgTable('analytics_dirty_scopes', {
   attempts: integer('attempts').notNull().default(0),
   ...timestamps
 }, (table) => [
-  index('dirty_scopes_account_status_idx').on(table.accountId, table.status, table.nextRunAt)
+  index('dirty_scopes_account_status_idx').on(table.accountId, table.status, table.nextRunAt),
+  uniqueIndex('dirty_scopes_unique_idx').on(table.accountId, table.locationId, table.businessDate)
 ]);
 
 export const analyticsDailyAccount = pgTable('analytics_daily_account', {

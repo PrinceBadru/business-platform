@@ -123,16 +123,17 @@ export async function processCheckout(
         status: 'pending'
       }).onConflictDoUpdate({
         target: [analyticsDirtyScopes.accountId, analyticsDirtyScopes.locationId, analyticsDirtyScopes.businessDate],
-        where: eq(analyticsDirtyScopes.status, 'pending'),
         set: {
+          status: 'pending',
+          attempts: 0,
           metricFamiliesDirty: sql`
-            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.metric_families_dirty || '["revenue", "inventory", "customer"]'::jsonb) t(x))
+            COALESCE((SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.metric_families_dirty || '["revenue", "inventory", "customer"]'::jsonb) t(x)), '[]'::jsonb)
           `,
           offeringIdsChanged: sql`
-            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.offering_ids_changed || ${JSON.stringify(offeringIds)}::jsonb) t(x))
+            COALESCE((SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.offering_ids_changed || ${JSON.stringify(offeringIds)}::jsonb) t(x)), '[]'::jsonb)
           `,
           customerIdsChanged: sql`
-            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.customer_ids_changed || ${JSON.stringify(customerIdsChanged)}::jsonb) t(x))
+            COALESCE((SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.customer_ids_changed || ${JSON.stringify(customerIdsChanged)}::jsonb) t(x)), '[]'::jsonb)
           `,
           sourceEventWatermark: sql`now()`
         }

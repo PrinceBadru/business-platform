@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "dirty_scopes_unique_idx" ON "analytics_dirty_scopes" USING btree ("account_id","location_id","business_date");
