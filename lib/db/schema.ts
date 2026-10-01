@@ -80,6 +80,7 @@ export const accounts = pgTable('accounts', {
   name: varchar('name', { length: 255 }).notNull(),
   businessType: businessTypeEnum('business_type').notNull(),
   settings: jsonb('settings').default({}),
+  timezone: varchar('timezone', { length: 50 }).notNull().default('UTC'),
   ...timestamps
 });
 
@@ -183,12 +184,14 @@ export const transactions = pgTable('transactions', {
   locationId: uuid('location_id').notNull().references(() => locations.id, { onDelete: 'restrict' }),
   transactionType: transactionTypeEnum('transaction_type').notNull(),
   totalCents: integer('total_cents').notNull(),
+  discountCents: integer('discount_cents').notNull().default(0),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => [
   index('transactions_account_loc_idx').on(table.accountId, table.locationId),
-  check('total_cents_positive', sql`${table.totalCents} >= 0`)
+  check('total_cents_positive', sql`${table.totalCents} >= 0`),
+  check('discount_cents_positive', sql`${table.discountCents} >= 0`)
 ]);
 
 export const transactionLines = pgTable('transaction_lines', {
@@ -198,13 +201,16 @@ export const transactionLines = pgTable('transaction_lines', {
   offeringId: uuid('offering_id').notNull().references(() => offerings.id, { onDelete: 'restrict' }),
   quantity: integer('quantity').notNull(),
   unitPriceCents: integer('unit_price_cents').notNull(),
+  unitCostAtTimeOfSaleCents: integer('unit_cost_at_time_of_sale_cents'),
+  discountCents: integer('discount_cents').notNull().default(0),
   lineTotalCents: integer('line_total_cents').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => [
   index('txlines_account_tx_idx').on(table.accountId, table.transactionId),
   check('quantity_positive', sql`${table.quantity} > 0`),
   check('unit_price_cents_positive', sql`${table.unitPriceCents} >= 0`),
-  check('line_total_cents_positive', sql`${table.lineTotalCents} >= 0`)
+  check('line_total_cents_positive', sql`${table.lineTotalCents} >= 0`),
+  check('discount_cents_positive', sql`${table.discountCents} >= 0`)
 ]);
 
 // Debts
@@ -291,3 +297,170 @@ export const auditLogs = pgTable('audit_logs', {
 }, (table) => [
   index('audit_logs_account_idx').on(table.accountId),
 ]);
+
+// ----------------------------------------------------------------------------
+// Insights & Alerts Engine
+// ----------------------------------------------------------------------------
+
+export const analyticsDirtyScopes = pgTable('analytics_dirty_scopes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  metricFamiliesDirty: jsonb('metric_families_dirty').notNull().default([]), // string[]
+  offeringIdsChanged: jsonb('offering_ids_changed').notNull().default([]), // string[]
+  customerIdsChanged: jsonb('customer_ids_changed').notNull().default([]),
+  supplierIdsChanged: jsonb('supplier_ids_changed').notNull().default([]),
+  sourceEventWatermark: timestamp('source_event_watermark').notNull().defaultNow(),
+  status: varchar('status', { length: 50 }).notNull().default('pending'),
+  nextRunAt: timestamp('next_run_at').notNull().defaultNow(),
+  attempts: integer('attempts').notNull().default(0),
+  ...timestamps
+}, (table) => [
+  index('dirty_scopes_account_status_idx').on(table.accountId, table.status, table.nextRunAt)
+]);
+
+export const analyticsDailyAccount = pgTable('analytics_daily_account', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  revenueCents: integer('revenue_cents').notNull().default(0),
+  cogsCents: integer('cogs_cents').notNull().default(0),
+  grossProfitCents: integer('gross_profit_cents').notNull().default(0),
+  transactionCount: integer('transaction_count').notNull().default(0),
+  customerCount: integer('customer_count').notNull().default(0),
+  creditSalesCents: integer('credit_sales_cents').notNull().default(0),
+  discountCents: integer('discount_cents').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_account_date_idx').on(table.accountId, table.businessDate)
+]);
+
+export const analyticsDailyLocation = pgTable('analytics_daily_location', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').notNull().references(() => locations.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  revenueCents: integer('revenue_cents').notNull().default(0),
+  cogsCents: integer('cogs_cents').notNull().default(0),
+  grossProfitCents: integer('gross_profit_cents').notNull().default(0),
+  transactionCount: integer('transaction_count').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_location_date_idx').on(table.locationId, table.businessDate)
+]);
+
+export const analyticsDailyOffering = pgTable('analytics_daily_offering', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'cascade' }),
+  offeringId: uuid('offering_id').notNull().references(() => offerings.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  quantitySold: integer('quantity_sold').notNull().default(0),
+  revenueCents: integer('revenue_cents').notNull().default(0),
+  cogsCents: integer('cogs_cents').notNull().default(0),
+  grossProfitCents: integer('gross_profit_cents').notNull().default(0),
+  discountCents: integer('discount_cents').notNull().default(0),
+  priceObservationCount: integer('price_observation_count').notNull().default(0),
+  sumPrice: integer('sum_price').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_offering_date_idx').on(table.locationId, table.offeringId, table.businessDate)
+]);
+
+export const analyticsDailyCustomer = pgTable('analytics_daily_customer', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  customerId: uuid('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  revenueCents: integer('revenue_cents').notNull().default(0),
+  transactionCount: integer('transaction_count').notNull().default(0),
+  creditSalesCents: integer('credit_sales_cents').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_customer_date_idx').on(table.customerId, table.businessDate)
+]);
+
+export const analyticsDailySupplier = pgTable('analytics_daily_supplier', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  supplierId: uuid('supplier_id').notNull().references(() => suppliers.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  purchaseVolumeCents: integer('purchase_volume_cents').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_supplier_date_idx').on(table.supplierId, table.businessDate)
+]);
+
+export const analyticsInventoryDaily = pgTable('analytics_inventory_daily', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'cascade' }),
+  offeringId: uuid('offering_id').notNull().references(() => offerings.id, { onDelete: 'cascade' }),
+  businessDate: date('business_date').notNull(),
+  openingStock: integer('opening_stock').notNull().default(0),
+  closingStock: integer('closing_stock').notNull().default(0),
+  stockValueCents: integer('stock_value_cents').notNull().default(0),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('daily_inventory_date_idx').on(table.locationId, table.offeringId, table.businessDate)
+]);
+
+export const analyticsMetricSnapshots = pgTable('analytics_metric_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'cascade' }),
+  offeringId: uuid('offering_id').references(() => offerings.id, { onDelete: 'cascade' }),
+  metricKey: varchar('metric_key', { length: 100 }).notNull(),
+  periodKey: varchar('period_key', { length: 50 }).notNull(),
+  value: jsonb('value').notNull(), 
+  sufficiencyStatus: varchar('sufficiency_status', { length: 50 }).notNull().default('computed'),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  computedAt: timestamp('computed_at').notNull().defaultNow(),
+  sourceWatermark: timestamp('source_watermark').notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('metric_snapshots_unique_idx').on(table.accountId, table.locationId, table.offeringId, table.metricKey, table.periodKey)
+]);
+
+export const analyticsAlerts = pgTable('analytics_alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'cascade' }),
+  offeringId: uuid('offering_id').references(() => offerings.id, { onDelete: 'cascade' }),
+  metricKey: varchar('metric_key', { length: 100 }).notNull(),
+  comparisonKey: varchar('comparison_key', { length: 100 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(), 
+  severity: varchar('severity', { length: 50 }).notNull(),
+  computedValue: jsonb('computed_value').notNull(),
+  baselineValue: jsonb('baseline_value'),
+  triggerType: varchar('trigger_type', { length: 50 }),
+  firstFiredAt: timestamp('first_fired_at').notNull().defaultNow(),
+  lastFiredAt: timestamp('last_fired_at').notNull().defaultNow(),
+  consecutivePeriods: integer('consecutive_periods').notNull().default(1),
+  formulaVersion: integer('formula_version').notNull().default(1),
+  computationRunId: uuid('computation_run_id'),
+  ...timestamps
+}, (table) => [
+  uniqueIndex('alerts_unique_idx').on(table.accountId, table.locationId, table.offeringId, table.metricKey, table.comparisonKey).where(sql`${table.status} IN ('active', 'candidate')`)
+]);
+
+export const analyticsComputationRuns = pgTable('analytics_computation_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  jobType: varchar('job_type', { length: 100 }).notNull(),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at'),
+  status: varchar('status', { length: 50 }).notNull(), // success, failed
+  rowsRead: integer('rows_read').default(0),
+  rowsWritten: integer('rows_written').default(0),
+  errorDetails: text('error_details'),
+  watermark: timestamp('watermark'),
+  formulaVersion: integer('formula_version').notNull().default(1)
+});

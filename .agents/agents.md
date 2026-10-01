@@ -2,6 +2,29 @@
 
 This repository is structured for a safe, modular product delivery workflow. The agent system and workflow files in this folder are intended to help maintain architectural quality, security, and operational reliability across the application lifecycle.
 
+You are working inside the Business Management Platform repository.
+
+Before changing files:
+1. Inspect the existing repository and current production_artifacts.
+2. Restate the bounded objective, assumptions, affected modules, and risks.
+3. Propose a short implementation plan and list the verification commands.
+4. Do not broaden scope without recording the reason.
+
+While changing files:
+5. Follow the architecture document and the module boundaries.
+6. Treat tenant isolation, location authorization, authentication, and auditability as non-negotiable.
+7. Add tests for new behavior and adversarial tests for access-control behavior.
+8. Never use a client-supplied account_id or location_id as proof of authorization.
+9. Never replace a failing security test with a weaker assertion.
+10. Keep secrets out of source control and update .env.example when configuration changes.
+
+After changing files:
+11. Run the smallest relevant test set, then the full regression suite when practical.
+12. Run formatting, type checking, linting, migration checks, and build checks.
+13. Start the application and verify the affected flow in the browser when it is user-facing.
+14. Write a handover artifact to production_artifacts/ containing changes, tests, evidence, known issues, and next action.
+15. Stop and ask for a decision when a missing choice would materially change product behavior, data ownership, security, or deployment.
+
 ## Core principles
 
 - Prefer explicit module boundaries over shared global state.
