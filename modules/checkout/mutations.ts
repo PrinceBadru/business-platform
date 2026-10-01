@@ -1,6 +1,6 @@
 'use server';
 
-import { offerings, transactions, transactionLines, stockMovements } from '@/lib/db/schema';
+import { offerings, transactions, transactionLines, stockMovements, analyticsDirtyScopes, accounts } from '@/lib/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 import { requirePermission } from '@/modules/rbac/guard';
@@ -47,6 +47,8 @@ export async function processCheckout(
           offeringId: item.id,
           quantity: line.quantity,
           unitPriceCents: item.priceCents,
+          unitCostAtTimeOfSaleCents: item.costCents,
+          discountCents: 0,
           lineTotalCents
         });
       }
@@ -104,6 +106,37 @@ export async function processCheckout(
           status: 'outstanding'
         });
       }
+
+      // 6. Enqueue Analytics Dirty Scope (Post-Commit Marker)
+      const [account] = await tx.select({ timezone: accounts.timezone }).from(accounts).where(eq(accounts.id, accountId));
+      const businessDate = new Date().toLocaleDateString('en-CA', { timeZone: account?.timezone || 'UTC' });
+      
+      const customerIdsChanged = customerId ? [customerId] : [];
+      
+      await tx.insert(analyticsDirtyScopes).values({
+        accountId,
+        locationId,
+        businessDate,
+        metricFamiliesDirty: ['revenue', 'inventory', 'customer'],
+        offeringIdsChanged: offeringIds,
+        customerIdsChanged,
+        status: 'pending'
+      }).onConflictDoUpdate({
+        target: [analyticsDirtyScopes.accountId, analyticsDirtyScopes.locationId, analyticsDirtyScopes.businessDate],
+        where: eq(analyticsDirtyScopes.status, 'pending'),
+        set: {
+          metricFamiliesDirty: sql`
+            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.metric_families_dirty || '["revenue", "inventory", "customer"]'::jsonb) t(x))
+          `,
+          offeringIdsChanged: sql`
+            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.offering_ids_changed || ${JSON.stringify(offeringIds)}::jsonb) t(x))
+          `,
+          customerIdsChanged: sql`
+            (SELECT jsonb_agg(DISTINCT x) FROM jsonb_array_elements_text(analytics_dirty_scopes.customer_ids_changed || ${JSON.stringify(customerIdsChanged)}::jsonb) t(x))
+          `,
+          sourceEventWatermark: sql`now()`
+        }
+      });
     });
 
     revalidatePath('/dashboard/inventory');
