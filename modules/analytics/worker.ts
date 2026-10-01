@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, and, sql, lte, inArray } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
+import { computeL1Snapshots } from './snapshots';
 
 const SLEEP_MS = 5000;
 const BATCH_SIZE = 50;
@@ -225,6 +226,8 @@ export async function startAnalyticsWorker() {
             scope.location_id as string | null, 
             scope.business_date as string
           );
+
+          await computeL1Snapshots(scope.account_id as string, scope.location_id as string | null);
 
           // Mark success
           await db.update(analyticsDirtyScopes)

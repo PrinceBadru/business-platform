@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getCurrentSession } from '@/modules/auth/session';
 import { redirect } from 'next/navigation';
 import { getDashboardMetrics } from '@/modules/analytics/queries';
-import { AlertTriangle, Package, Receipt, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Package, Receipt, TrendingUp, RefreshCw, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function DashboardOverviewPage() {
@@ -23,9 +23,33 @@ export default async function DashboardOverviewPage() {
 
   return (
     <div className="max-w-7xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Business Insights</h1>
-        <p className="text-gray-500">Live operational metrics and alerts for your account.</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Business Insights</h1>
+          <p className="text-gray-500">Live operational metrics and alerts for your account.</p>
+        </div>
+        
+        <div className="flex items-center gap-2 text-sm">
+          {metrics.meta.freshnessStatus === 'updating' ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full font-medium">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Updating...
+            </span>
+          ) : metrics.meta.freshnessStatus === 'insufficient_data' ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full font-medium">
+              <Clock className="w-4 h-4" />
+              Waiting for data
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full font-medium">
+              <CheckCircle className="w-4 h-4" />
+              Fresh (v{metrics.meta.formulaVersion})
+            </span>
+          )}
+          <span className="text-gray-400 text-xs">
+            as of {new Date(metrics.meta.computedAt).toLocaleTimeString()}
+          </span>
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -39,9 +63,16 @@ export default async function DashboardOverviewPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-4xl font-black text-white tracking-tight">{formatMoney(metrics.revenue)}</div>
-            <p className="text-sm text-indigo-100 mt-2 font-medium bg-black/10 inline-flex px-2 py-1 rounded-md">
-              Across {metrics.transactionCount} transactions
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-sm text-indigo-100 font-medium bg-black/10 inline-flex px-2 py-1 rounded-md">
+                Across {metrics.transactionCount} transactions
+              </p>
+              {metrics.grossMarginPercent > 0 && (
+                <p className="text-sm text-green-100 font-bold bg-green-900/50 inline-flex px-2 py-1 rounded-md">
+                  {(metrics.grossMarginPercent * 100).toFixed(1)}% GM
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
         

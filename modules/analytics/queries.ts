@@ -1,46 +1,49 @@
-import { transactions, transactionLines, offerings } from '@/lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { transactions, transactionLines, offerings, analyticsMetricSnapshots, analyticsDirtyScopes } from '@/lib/db/schema';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
+
+export type FreshnessStatus = 'fresh' | 'updating' | 'insufficient_data';
 
 export async function getDashboardMetrics(accountId: string) {
   return withTenantContext(accountId, async (tx) => {
-    // 1. Total Revenue and count
-    const [txStats] = await tx.select({
-      revenue: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.transactionType} = 'refund' THEN -${transactions.totalCents} ELSE ${transactions.totalCents} END), 0)::text`,
-      count: sql<string>`COUNT(${transactions.id})::text`
-    }).from(transactions)
-    .where(eq(transactions.accountId, accountId));
+    // 1. Fetch Snapshots
+    const snapshots = await tx.select()
+      .from(analyticsMetricSnapshots)
+      .where(
+        and(
+          eq(analyticsMetricSnapshots.accountId, accountId),
+          eq(analyticsMetricSnapshots.periodKey, 'all_time')
+        )
+      );
 
-    // 2. Type stats
-    const typeStatsRaw = await tx.select({
-      type: offerings.itemType,
-      revenue: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.transactionType} = 'refund' THEN -${transactionLines.lineTotalCents} ELSE ${transactionLines.lineTotalCents} END), 0)::text`
-    })
-    .from(transactionLines)
-    .innerJoin(transactions, eq(transactionLines.transactionId, transactions.id))
-    .innerJoin(offerings, eq(transactionLines.offeringId, offerings.id))
-    .where(eq(transactionLines.accountId, accountId))
-    .groupBy(offerings.itemType);
+    const snapshotMap = new Map(snapshots.map(s => [s.metricKey, s]));
 
-    const typeStats = typeStatsRaw.map(r => ({
-      type: r.type,
-      revenue: parseInt(r.revenue, 10)
-    }));
+    const revenueSnapshot = snapshotMap.get('total_revenue');
+    const txCountSnapshot = snapshotMap.get('transaction_count');
+    const salesByTypeSnapshot = snapshotMap.get('sales_by_type');
+    const lowStockSnapshot = snapshotMap.get('low_stock_alerts');
+    const grossMarginSnapshot = snapshotMap.get('gross_margin');
 
-    // 3. Low stock
-    const lowStock = await tx.select({
-      id: offerings.id,
-      name: offerings.name,
-      currentStock: offerings.currentStock,
-      reorderThreshold: offerings.reorderThreshold
-    })
-    .from(offerings)
-    .where(
-      sql`${offerings.accountId} = ${accountId} AND ${offerings.tracksStock} = true AND ${offerings.currentStock} <= GREATEST(${offerings.reorderThreshold}, 5)`
-    )
-    .limit(5);
+    const revenueCents = revenueSnapshot?.value && typeof revenueSnapshot.value === 'object' && 'cents' in revenueSnapshot.value 
+      ? Number(revenueSnapshot.value.cents) 
+      : 0;
+
+    const txCount = txCountSnapshot?.value && typeof txCountSnapshot.value === 'object' && 'count' in txCountSnapshot.value 
+      ? Number(txCountSnapshot.value.count) 
+      : 0;
+
+    const salesByType = salesByTypeSnapshot?.value as any || {};
+    const typeStats = [
+      { type: 'good', revenue: salesByType.goodsRevenueCents || 0 },
+      { type: 'service', revenue: salesByType.servicesRevenueCents || 0 }
+    ];
+
+    const lowStockRaw = lowStockSnapshot?.value as any || {};
+    const lowStock = lowStockRaw.items || [];
     
-    // 4. Recent TX
+    const grossMargin = grossMarginSnapshot?.value as any || {};
+
+    // 2. Fetch Recent Transactions (Still real-time, just 5 rows)
     const recentTx = await tx.select({
       id: transactions.id,
       totalCents: transactions.totalCents,
@@ -51,12 +54,30 @@ export async function getDashboardMetrics(accountId: string) {
     .orderBy(desc(transactions.createdAt))
     .limit(5);
 
+    // 3. Determine Freshness Status
+    const [pendingScope] = await tx.select({ id: analyticsDirtyScopes.id })
+      .from(analyticsDirtyScopes)
+      .where(and(eq(analyticsDirtyScopes.accountId, accountId), eq(analyticsDirtyScopes.status, 'pending')))
+      .limit(1);
+
+    const isMissingData = !revenueSnapshot;
+    const freshnessStatus: FreshnessStatus = isMissingData 
+      ? 'insufficient_data' 
+      : (pendingScope ? 'updating' : 'fresh');
+
     return {
-      revenue: parseInt(txStats?.revenue || '0', 10),
-      transactionCount: parseInt(txStats?.count || '0', 10),
+      revenue: revenueCents,
+      transactionCount: txCount,
+      grossMarginPercent: grossMargin.percent || 0,
       typeStats,
       lowStock,
-      recentTx
+      recentTx,
+      meta: {
+        freshnessStatus,
+        computedAt: revenueSnapshot?.computedAt || new Date(),
+        sourceWatermark: revenueSnapshot?.sourceWatermark || new Date(),
+        formulaVersion: revenueSnapshot?.formulaVersion || 1
+      }
     };
   });
 }
