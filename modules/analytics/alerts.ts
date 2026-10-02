@@ -5,6 +5,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, sql, and, desc, inArray } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
+import { dispatchAlertNotification } from './notifications';
 
 /**
  * Evaluates anomaly detection rules and updates the alert state machine.
@@ -97,6 +98,18 @@ export async function evaluateAnomalyAlerts(accountId: string) {
             updatedAt: new Date()
           })
           .where(eq(analyticsAlerts.id, existing.id));
+
+        // Dispatch notification if it just became active
+        if (newStatus === 'active' && existing.status !== 'active') {
+          // Fire and forget, or await. We'll await for simplicity here, 
+          // though typically this goes onto a sidekiq/bull queue.
+          await dispatchAlertNotification(
+            accountId,
+            `Alert: ${anomaly.metricKey} anomaly detected`,
+            anomaly.severity,
+            `The metric ${anomaly.metricKey} triggered a ${anomaly.severity} severity alert compared to its baseline.`
+          );
+        }
       }
 
       // Remove from map so we know it was processed

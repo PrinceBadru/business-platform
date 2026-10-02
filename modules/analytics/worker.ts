@@ -9,7 +9,8 @@ import {
   transactions,
   transactionLines,
   debts,
-  offerings
+  offerings,
+  accounts
 } from '@/lib/db/schema';
 import { eq, and, sql, lte, inArray } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
@@ -26,10 +27,17 @@ const MAX_ATTEMPTS = 3;
  */
 export async function computeDailyRollups(accountId: string, locationId: string | null, businessDate: string) {
   await withTenantContext(accountId, async (tx) => {
+    // Fetch account timezone to correctly bucket transactions
+    const [account] = await tx.select({ timezone: accounts.timezone })
+      .from(accounts)
+      .where(eq(accounts.id, accountId));
+    
+    const tz = account?.timezone || 'UTC';
+
     // 1. Account & Location Metrics
     const baseWhere = locationId 
-      ? and(eq(transactions.accountId, accountId), eq(transactions.locationId, locationId), sql`DATE(timezone('UTC', ${transactions.createdAt})) = ${businessDate}::date`)
-      : and(eq(transactions.accountId, accountId), sql`DATE(timezone('UTC', ${transactions.createdAt})) = ${businessDate}::date`);
+      ? and(eq(transactions.accountId, accountId), eq(transactions.locationId, locationId), sql`DATE(timezone(${tz}, ${transactions.createdAt})) = ${businessDate}::date`)
+      : and(eq(transactions.accountId, accountId), sql`DATE(timezone(${tz}, ${transactions.createdAt})) = ${businessDate}::date`);
 
     const [accountStats] = await tx.select({
       revenue: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.transactionType} = 'refund' THEN -${transactions.totalCents} ELSE ${transactions.totalCents} END), 0)::int`,
