@@ -116,6 +116,7 @@ Running `npm run db:seed` creates two isolated demo tenants with real, functiona
 |---|---|---|---|---|
 | Acme Retail | Retail | `admin@acmeretail.com` | `acme_admin` | `password123` |
 | Globex Services | Services | `admin@globex.com` | `globex_admin` | `password123` |
+| Insights Demo | Hybrid | `admin@insights.com` | `insights_admin` | `password123` |
 
 > [!NOTE]
 > Each tenant is fully isolated — signing in as `admin@acmeretail.com` will only show Acme Retail data, and vice versa.
