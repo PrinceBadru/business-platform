@@ -20,16 +20,34 @@ export async function createBusinessAccount(
   const businessName = (formData.get('businessName') as string)?.trim();
   const businessType = formData.get('businessType') as 'retail' | 'services' | 'hybrid';
   const locationName = (formData.get('locationName') as string)?.trim() || 'Main Location';
+  const country = (formData.get('country') as string) || 'UG';
 
   if (!businessName) return { error: 'Business name is required.' };
   if (!['retail', 'services', 'hybrid'].includes(businessType)) {
     return { error: 'Please select a valid business type.' };
   }
 
+  // Map country to standard IANA timezone
+  const tzMap: Record<string, string> = {
+    'UG': 'Africa/Kampala',
+    'KE': 'Africa/Nairobi',
+    'TZ': 'Africa/Dar_es_Salaam',
+    'RW': 'Africa/Kigali',
+    'NG': 'Africa/Lagos',
+    'ZA': 'Africa/Johannesburg',
+    'US': 'America/New_York', // Simplified default for US
+    'GB': 'Europe/London',
+    'IN': 'Asia/Kolkata',
+    'OTHER': 'UTC'
+  };
+  
+  const timezone = tzMap[country] || 'UTC';
+
   // 1. Create the account (tenant)
   const [account] = await db.insert(accounts).values({
     name: businessName,
     businessType,
+    timezone,
   }).returning();
 
   // 2. Create a default location
