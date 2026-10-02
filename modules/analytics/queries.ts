@@ -1,5 +1,5 @@
-import { transactions, transactionLines, offerings, analyticsMetricSnapshots, analyticsDirtyScopes } from '@/lib/db/schema';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { transactions, transactionLines, offerings, analyticsMetricSnapshots, analyticsDirtyScopes, analyticsAlerts } from '@/lib/db/schema';
+import { eq, desc, sql, and, inArray } from 'drizzle-orm';
 import { withTenantContext } from '@/lib/db/tenant';
 
 export type FreshnessStatus = 'fresh' | 'updating' | 'insufficient_data';
@@ -54,7 +54,18 @@ export async function getDashboardMetrics(accountId: string) {
     .orderBy(desc(transactions.createdAt))
     .limit(5);
 
-    // 3. Determine Freshness Status
+    // 3. Fetch Active Alerts
+    const activeAlerts = await tx.select()
+      .from(analyticsAlerts)
+      .where(
+        and(
+          eq(analyticsAlerts.accountId, accountId),
+          eq(analyticsAlerts.status, 'active')
+        )
+      )
+      .orderBy(desc(analyticsAlerts.updatedAt));
+
+    // 4. Determine Freshness Status
     const [pendingScope] = await tx.select({ id: analyticsDirtyScopes.id })
       .from(analyticsDirtyScopes)
       .where(and(eq(analyticsDirtyScopes.accountId, accountId), eq(analyticsDirtyScopes.status, 'pending')))
@@ -72,6 +83,7 @@ export async function getDashboardMetrics(accountId: string) {
       typeStats,
       lowStock,
       recentTx,
+      activeAlerts,
       meta: {
         freshnessStatus,
         computedAt: revenueSnapshot?.computedAt || new Date(),

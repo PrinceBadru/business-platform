@@ -213,6 +213,50 @@ export default async function DashboardOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Advanced L2/L3 Insights & Alerts block */}
+      {metrics.activeAlerts.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-1">
+          <Card className="shadow-md border-red-100 dark:border-red-900/30 bg-red-50/10 dark:bg-red-950/10">
+            <CardHeader className="border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20">
+              <CardTitle className="flex items-center gap-2 text-lg text-red-700 dark:text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+                Active Intelligent Alerts
+              </CardTitle>
+              <CardDescription className="text-red-600/70 dark:text-red-400/70">
+                Anomalies and trends detected by the insights engine over your historical data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-red-100 dark:divide-red-900/30">
+                {metrics.activeAlerts.map(alert => (
+                  <div key={alert.id} className="p-4 flex flex-col md:flex-row justify-between md:items-center gap-4 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
+                    <div>
+                      <h4 className="font-bold text-red-900 dark:text-red-300 capitalize">
+                        {alert.metricKey.replace(/_/g, ' ')}
+                      </h4>
+                      <p className="text-sm text-red-700/80 dark:text-red-400/80 mt-1">
+                        Triggered by {alert.triggerType} (Severity: {alert.severity})
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm bg-white dark:bg-black/20 p-2 rounded-md shadow-sm border border-red-100 dark:border-red-900/30">
+                      <div className="text-center">
+                        <span className="block text-gray-500 text-xs uppercase tracking-wider">Current</span>
+                        <span className="font-black text-gray-900 dark:text-white">{(alert.computedValue as any)?.cents ? formatMoney((alert.computedValue as any).cents) : JSON.stringify(alert.computedValue)}</span>
+                      </div>
+                      <div className="w-px h-8 bg-gray-200 dark:bg-gray-800"></div>
+                      <div className="text-center">
+                        <span className="block text-gray-500 text-xs uppercase tracking-wider">Baseline</span>
+                        <span className="font-bold text-gray-700 dark:text-gray-300">{(alert.baselineValue as any)?.cents ? formatMoney((alert.baselineValue as any).cents) : JSON.stringify(alert.baselineValue)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
