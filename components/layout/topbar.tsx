@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { switchLocation } from '@/modules/accounts/switcher';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 type SearchResult = {
   type: 'offering' | 'customer' | 'transaction';
@@ -127,11 +128,9 @@ export function Topbar({
               )}
             </div>
           )}
-        </div>
-      </div>
-
       {/* Right side */}
       <div className="flex items-center gap-4">
+        <ThemeSwitcher />
         {locations.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

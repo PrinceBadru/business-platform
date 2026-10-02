@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { updateAccountSettings } from '@/modules/account/mutations';
 import { createLocation, archiveLocation } from '@/modules/locations/mutations';
-import { Building, MapPin, Plus, Trash } from 'lucide-react';
+import { Building, MapPin, Plus, Trash, Palette } from 'lucide-react';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 export function SettingsClient({ account, locations }: { account: any, locations: any[] }) {
   const [isPending, startTransition] = useTransition();
@@ -96,6 +97,27 @@ export function SettingsClient({ account, locations }: { account: any, locations
             {isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-gray-500" />
+            Appearance
+          </CardTitle>
+          <CardDescription>
+            Customize the look and feel of your dashboard.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <label className="text-sm font-medium">Dashboard Theme</label>
+              <p className="text-xs text-gray-500">Select a theme that matches your brand or preference.</p>
+            </div>
+            <ThemeSwitcher />
+          </div>
+        </CardContent>
       </Card>
 
       <Card>
