@@ -163,6 +163,150 @@ async function seed() {
     lineTotalCents: 12000
   });
 
+  // ==========================================
+  // Tenant 3: Insights Demo (Advanced Analytics)
+  // ==========================================
+  console.log('Seeding Insights Demo...');
+  const [insightsAccount] = await db.insert(schema.accounts).values({
+    name: 'Insights Analytics Demo',
+    businessType: 'hybrid',
+    timezone: 'UTC'
+  }).returning();
+
+  const [insightsLocation] = await db.insert(schema.locations).values({
+    accountId: insightsAccount.id,
+    name: 'Global Insights HQ'
+  }).returning();
+
+  const [insightsUser] = await db.insert(schema.users).values({
+    email: 'admin@insights.com',
+    username: 'insights_admin',
+    name: 'Insights Admin',
+    passwordHash: demoPasswordHash
+  }).returning();
+
+  await db.insert(schema.userAccountRoles).values({
+    userId: insightsUser.id,
+    accountId: insightsAccount.id,
+    role: 'owner'
+  });
+
+  await db.insert(schema.userLocationAccess).values({
+    userId: insightsUser.id,
+    accountId: insightsAccount.id,
+    locationId: insightsLocation.id
+  });
+
+  const [insightsCustomer] = await db.insert(schema.customers).values({
+    accountId: insightsAccount.id,
+    name: 'Whale Client Inc',
+    phone: '555-9999'
+  }).returning();
+
+  const [insightsGood] = await db.insert(schema.offerings).values({
+    accountId: insightsAccount.id,
+    name: 'Critical Inventory Item',
+    category: 'Hardware',
+    itemType: 'good',
+    tracksStock: true,
+    currentStock: 2, // Critically low! Will trigger Low Stock Action List
+    priceCents: 50000, 
+    costCents: 20000
+  }).returning();
+
+  const [insightsService] = await db.insert(schema.offerings).values({
+    accountId: insightsAccount.id,
+    name: 'Enterprise Retainer',
+    category: 'Consulting',
+    itemType: 'service',
+    tracksStock: false,
+    priceCents: 200000, 
+    costCents: 0
+  }).returning();
+
+  // Seed 14 days of transactions
+  console.log('Generating 14 days of historical transactions...');
+  const today = new Date();
+  const txData = [];
+  const lineData = [];
+
+  for (let i = 14; i >= 0; i--) {
+    const bizDate = new Date(today);
+    bizDate.setDate(today.getDate() - i);
+    
+    // Anomaly simulation: massive revenue drop in the last 2 days
+    const isAnomalyPeriod = i <= 2;
+    const dailyTxCount = isAnomalyPeriod ? 1 : 5; // Dropped from 5 sales a day to 1
+
+    for (let j = 0; j < dailyTxCount; j++) {
+      const [tx] = await db.insert(schema.transactions).values({
+        accountId: insightsAccount.id,
+        locationId: insightsLocation.id,
+        transactionType: 'sale',
+        totalCents: isAnomalyPeriod ? 50000 : 250000, // 80% revenue drop
+        customerId: insightsCustomer.id,
+        createdBy: insightsUser.id,
+        createdAt: bizDate
+      }).returning();
+
+      if (isAnomalyPeriod) {
+        await db.insert(schema.transactionLines).values({
+          accountId: insightsAccount.id,
+          transactionId: tx.id,
+          offeringId: insightsGood.id,
+          quantity: 1,
+          unitPriceCents: 50000,
+          lineTotalCents: 50000,
+          unitCostAtTimeOfSaleCents: 20000,
+          createdAt: bizDate
+        });
+      } else {
+        await db.insert(schema.transactionLines).values({
+          accountId: insightsAccount.id,
+          transactionId: tx.id,
+          offeringId: insightsService.id,
+          quantity: 1,
+          unitPriceCents: 200000,
+          lineTotalCents: 200000,
+          unitCostAtTimeOfSaleCents: 0,
+          createdAt: bizDate
+        });
+        await db.insert(schema.transactionLines).values({
+          accountId: insightsAccount.id,
+          transactionId: tx.id,
+          offeringId: insightsGood.id,
+          quantity: 1,
+          unitPriceCents: 50000,
+          lineTotalCents: 50000,
+          unitCostAtTimeOfSaleCents: 20000,
+          createdAt: bizDate
+        });
+      }
+    }
+  }
+
+  // Calculate Rollups and Analytics mathematically
+  console.log('Computing L1 & L2 Analytics via worker engine...');
+  const { computeDailyRollups } = await import('../../modules/analytics/worker');
+  const { computeL1Snapshots } = await import('../../modules/analytics/snapshots');
+  const { evaluateAnomalyAlerts } = await import('../../modules/analytics/alerts');
+
+  // Compute rollups for all 14 days
+  for (let i = 14; i >= 0; i--) {
+    const bizDate = new Date(today);
+    bizDate.setDate(today.getDate() - i);
+    const dateStr = bizDate.toISOString().split('T')[0];
+    await computeDailyRollups(insightsAccount.id, insightsLocation.id, dateStr);
+    await computeDailyRollups(insightsAccount.id, null, dateStr);
+  }
+
+  // Compute L1 Snapshots
+  await computeL1Snapshots(insightsAccount.id, null);
+
+  // Compute L2 Anomaly Alerts (run multiple times to simulate daily progression and trigger ACTIVE state)
+  await evaluateAnomalyAlerts(insightsAccount.id); // Triggers candidate
+  await evaluateAnomalyAlerts(insightsAccount.id); // Transitions to active
+
   console.log('✅ Seeding complete!');
   
   // Close the database connection
