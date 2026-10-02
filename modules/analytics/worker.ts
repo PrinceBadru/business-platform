@@ -203,7 +203,7 @@ export async function startAnalyticsWorker() {
         LIMIT ${BATCH_SIZE}
         FOR UPDATE SKIP LOCKED
       `;
-      const { rows: scopes } = await db.execute(query);
+      const scopes = await db.execute(query);
 
       if (scopes.length === 0) {
         await new Promise(resolve => setTimeout(resolve, SLEEP_MS));

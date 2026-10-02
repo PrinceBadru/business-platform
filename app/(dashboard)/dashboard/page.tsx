@@ -151,7 +151,7 @@ export default async function DashboardOverviewPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {metrics.lowStock.map(item => (
+                {metrics.lowStock.map((item: any) => (
                   <div key={item.id} className="flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
